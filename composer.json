@@ -1,5 +1,5 @@
 {
-  "name": "martin3r/laravel-activity-log",
+  "name": "martin3r-me/laravel-activity-log",
   "autoload": {
     "psr-4": {
       "Martin3r\\LaravelActivityLog\\": "src/"
