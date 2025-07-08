@@ -1,0 +1,15 @@
+{
+  "name": "martin3r/laravel-activity-log",
+  "autoload": {
+    "psr-4": {
+      "Martin3r\\LaravelActivityLog\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Martin3r\\LaravelActivityLog\\ActivityLogServiceProvider"
+      ]
+    }
+  }
+}
