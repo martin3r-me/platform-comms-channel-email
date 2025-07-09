@@ -1,5 +1,3 @@
-
-
 <?php
 
 namespace Martin3r\LaravelActivityLog\Http\Livewire\Activities;
