@@ -12,13 +12,11 @@
                 class="flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm shadow-inner
                        focus:bg-white focus:ring-2 focus:ring-purple-500 transition"
             ></textarea>
-
-            <button
-                wire:click="save"
-                class="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 transition"
+            <x-ui-button
+                variant="primary" wire:click="save"
             >
                 Senden
-            </button>
+            </x-ui-button>
         </div>
 
 

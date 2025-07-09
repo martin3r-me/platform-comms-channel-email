@@ -1,5 +1,8 @@
 {
   "name": "martin3r-me/laravel-activity-log",
+  "require": {
+        "martin3r-me/laravel-ui-elements": "dev-main"
+    },
   "autoload": {
     "psr-4": {
       "Martin3r\\LaravelActivityLog\\": "src/"
