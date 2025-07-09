@@ -3,6 +3,7 @@
 namespace Martin3r\LaravelActivityLog\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Symfony\Component\Uid\UuidV7;
 
 class Activity extends Model
 {
@@ -30,6 +31,13 @@ class Activity extends Model
         'properties' => 'array',
         'metadata'   => 'array',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $model) {
+            $model->uuid = UuidV7::generate();
+        });
+    }
 
     /**
      * Polymorphic inverse relation to the subject model.
