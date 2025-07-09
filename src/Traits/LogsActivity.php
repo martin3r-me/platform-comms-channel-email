@@ -28,25 +28,15 @@ trait LogsActivity
 
     /**
      * Boot the LogsActivity trait and register model event listeners.
-     * Logs trait initialization for each model using it.
      */
     public static function bootLogsActivity(): void
     {
-        // Log trait initialization
-        Log::info('LogsActivity trait initialized for model', [
-            'model' => static::class,
-        ]);
-
         $events = static::$recordEvents ?: config('activity-log.events', []);
 
         foreach ($events as $event) {
             static::{$event}(function (Model $model) use ($event) {
-                Log::info("Activity event fired: {$event}", [
-                    'model' => get_class($model),
-                    'id'    => $model->getKey(),
-                ]);
-
-                $model->logActivity($event);
+                // Record as system type
+                $model->recordActivity($event, 'system');
             });
         }
     }
@@ -60,28 +50,29 @@ trait LogsActivity
     }
 
     /**
-     * Create a new activity record for the given event.
+     * Record an activity with given event name and type.
      */
-    public function logActivity(string $event): void
+    public function recordActivity(string $event, string $activityType): void
     {
         $properties = $this->getActivityProperties($event);
-
-        // Skip recording if no meaningful changes on update
         if ($event === 'updated' && empty($properties)) {
             return;
         }
 
-        Log::info("Logging activity: {$event}", [
-            'model'      => get_class($this),
-            'id'         => $this->getKey(),
-            'properties' => $properties,
-        ]);
-
         $this->activities()->create([
-            'name'       => $event,
-            'user_id'    => auth()->id(),
-            'properties' => $properties,
+            'activity_type' => $activityType,
+            'name'          => $event,
+            'user_id'       => auth()->id(),
+            'properties'    => $properties,
         ]);
+    }
+
+    /**
+     * Convenience alias for manual activities.
+     */
+    public function logActivity(string $message): void
+    {
+        $this->recordActivity('manual', 'manual');
     }
 
     /**
@@ -89,17 +80,8 @@ trait LogsActivity
      */
     protected function getActivityProperties(string $event): array
     {
-        $attributes = $event === 'updated'
-            ? $this->getChanges()
-            : $this->getAttributes();
-
-        $ignore = array_merge(
-            config('activity-log.ignore_attributes', []),
-            $this->ignoreAttributes
-        );
-
-        return collect($attributes)
-            ->except($ignore)
-            ->toArray();
+        $attrs = $event === 'updated' ? $this->getChanges() : $this->getAttributes();
+        $ignore = array_merge(config('activity-log.ignore_attributes', []), $this->ignoreAttributes);
+        return collect($attrs)->except($ignore)->toArray();
     }
 }

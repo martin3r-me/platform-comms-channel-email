@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->string('activity_type');
+            $table->string('name');
             $table->text('message')->nullable();
             $table->text('description')->nullable();
             $table->json('properties')->nullable();
