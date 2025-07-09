@@ -3,6 +3,7 @@
 namespace Martin3r\LaravelActivityLog\Traits;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Martin3r\LaravelActivityLog\Models\Activity;
 
 trait LogsActivity
@@ -27,13 +28,24 @@ trait LogsActivity
 
     /**
      * Boot the LogsActivity trait and register model event listeners.
+     * Logs trait initialization for each model using it.
      */
     public static function bootLogsActivity(): void
     {
+        // Log trait initialization
+        Log::info('LogsActivity trait initialized for model', [
+            'model' => static::class,
+        ]);
+
         $events = static::$recordEvents ?: config('activity-log.events', []);
 
         foreach ($events as $event) {
-            static::$event(function (Model $model) use ($event) {
+            static::{$event}(function (Model $model) use ($event) {
+                Log::info("Activity event fired: {$event}", [
+                    'model' => get_class($model),
+                    'id'    => $model->getKey(),
+                ]);
+
                 $model->logActivity($event);
             });
         }
@@ -59,6 +71,12 @@ trait LogsActivity
             return;
         }
 
+        Log::info("Logging activity: {$event}", [
+            'model'      => get_class($this),
+            'id'         => $this->getKey(),
+            'properties' => $properties,
+        ]);
+
         $this->activities()->create([
             'name'       => $event,
             'user_id'    => auth()->id(),
@@ -71,18 +89,15 @@ trait LogsActivity
      */
     protected function getActivityProperties(string $event): array
     {
-        // Decide which attributes to inspect (all vs. only changes)
         $attributes = $event === 'updated'
             ? $this->getChanges()
             : $this->getAttributes();
 
-        // Merge global and model-specific ignored attributes
         $ignore = array_merge(
             config('activity-log.ignore_attributes', []),
             $this->ignoreAttributes
         );
 
-        // Filter out ignored attributes
         return collect($attributes)
             ->except($ignore)
             ->toArray();
