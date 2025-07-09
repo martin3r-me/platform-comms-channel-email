@@ -13,7 +13,7 @@
                        focus:bg-white focus:ring-2 focus:ring-purple-500 transition"
             ></textarea>
             <x-ui-button
-                variant="primary" wire:click="save"
+                variant="success" wire:click="save"
             >
                 Senden
             </x-ui-button>
