@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('activity_type');
             $table->text('message')->nullable();
             $table->text('description')->nullable();
+            $table->json('properties')->nullable();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->morphs('activityable');
             $table->json('metadata')->nullable();
