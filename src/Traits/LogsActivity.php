@@ -3,7 +3,6 @@
 namespace Martin3r\LaravelActivityLog\Traits;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 use Martin3r\LaravelActivityLog\Models\Activity;
 
 trait LogsActivity
@@ -41,11 +40,11 @@ trait LogsActivity
     }
 
     /**
-     * Define polymorphic relation to activities.
+     * Polymorphic activities relation with latest ordering.
      */
     public function activities()
     {
-        return $this->morphMany(Activity::class, 'subject');
+        return $this->morphMany(Activity::class, 'activityable')->latest();
     }
 
     /**
@@ -89,4 +88,3 @@ trait LogsActivity
             ->toArray();
     }
 }
-
