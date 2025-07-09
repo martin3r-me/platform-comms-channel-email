@@ -22,10 +22,6 @@ class Index extends Component
     public function save(): void
     {
         if (blank($this->model) || blank($this->message)) {
-            logger()->info('Activity payload', [
-                'model' => $this->model?->toArray(),
-                'message' => $this->message,
-            ]);
             return;
         }
 
@@ -33,6 +29,7 @@ class Index extends Component
 
         $this->model->activities()->create([
             'activity_type' => 'manual',
+            'name'          => 'message_added',
             'description'   => 'User-created message',
             'user_id'       => $userId,
             'message'       => trim($this->message),
