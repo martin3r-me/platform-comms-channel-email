@@ -55,7 +55,7 @@
                     @endif
 
                     {{-- Änderungen (old / new) --}}
-                    @php $props = json_decode($activity->properties, true); @endphp
+                    @php $props = $activity->properties; @endphp
                     @if(!empty($props['old']) || !empty($props['new']))
                         <div class="px-6 pb-4">
                             <div class="rounded-lg bg-slate-50 p-4">
