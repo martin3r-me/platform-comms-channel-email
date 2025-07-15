@@ -49,128 +49,135 @@ class PostmarkMailService
      *
      * @return string  Thread-Token
      */
+    /**
+     * Versendet eine Mail, erzeugt Thread, OutboundMail & Attachments.
+     * Gibt den Thread-Token zurück.
+     */
     public function send(
         string $to,
         string $subject,
         string $htmlBody,
         ?string $textBody = null,
-        array  $files = [],
-        array  $opt   = [],
+        array  $files     = [],
+        array  $opt       = [],
     ): string {
-        /* -------------------------------------------------------------
-         | 1) Thread + Token
-         *-------------------------------------------------------------*/
+
+        /* --------------------------------------------------------- */
+        /* 1) Thread & Token                                         */
+        /* --------------------------------------------------------- */
         $token  = $opt['token'] ?? Str::ulid()->toBase32();
         $thread = Thread::firstOrCreate(
             ['token' => $token],
             ['subject' => $subject]
         );
 
-        /* -------------------------------------------------------------
-         | 2) Body-Marker
-         *-------------------------------------------------------------*/
-        $marker = "[conv:$token]";
-        $htmlBody .= "\n<!-- conversation-token:$token -->";
-        $htmlBody .= "\n<span style=\"display:none;\">$marker</span>";
+        /* --------------------------------------------------------- */
+        /* 2) Body-Marker                                            */
+        /* --------------------------------------------------------- */
+        $marker   = "[conv:$token]";
+        $htmlBody .= "\n<!-- conversation-token:$token --><span style=\"display:none;\">$marker</span>";
         $textBody ??= strip_tags($htmlBody);
         $textBody .= "\n\n$marker";
 
-        /* -------------------------------------------------------------
-         | 3) Attachments vorbereiten
-         *-------------------------------------------------------------*/
-        $pmAttachments = [];
-        $mailAttachmentsMeta = [];
+        /* --------------------------------------------------------- */
+        /* 3) Attachments                                            */
+        /* --------------------------------------------------------- */
+        $pmAttachments      = [];
+        $storedAttachments  = [];
 
         foreach ($files as $file) {
             $path = $file instanceof UploadedFile ? $file->getRealPath() : $file;
-            $name = $file instanceof UploadedFile ? $file->getClientOriginalName() : basename($path);
-            $mime = $file instanceof UploadedFile ? $file->getClientMimeType() : mime_content_type($path);
-            $size = filesize($path);
-
-            // a) PostmarkAttachment
-            $pmAttachments[] = PostmarkAttachment::fromFile($path, $name, $mime);
-
-            // b) Datei ins Storage kopieren (optional: wenn UploadedFile)
-            if ($file instanceof UploadedFile) {
-                $storedPath = "threads/{$thread->id}/{$name}";
-                Storage::disk('emails')->putFileAs("threads/{$thread->id}", $file, $name);
-            } else {
-                $storedPath = $path; // bereits auf Disk
+            if (!is_file($path) || filesize($path) === 0) {
+                continue;                                       // 0-Byte überspringen
             }
 
-            // c) Attachment-Meta
-            $mailAttachmentsMeta[] = compact('name', 'mime', 'size', 'storedPath');
+            $name = $file instanceof UploadedFile ? $file->getClientOriginalName() : basename($path);
+            $mime = $file instanceof UploadedFile ? $file->getClientMimeType() : mime_content_type($path);
+
+            $pmAttachments[] = PostmarkAttachment::fromFile($path, $name, $mime);
+
+            // im Storage sichern, falls es ein Upload war
+            if ($file instanceof UploadedFile) {
+                $storedPath = "threads/{$thread->id}/$name";
+                Storage::disk('emails')->putFileAs("threads/{$thread->id}", $file, $name);
+            } else {
+                $storedPath = $path;
+            }
+
+            $storedAttachments[] = compact('name', 'mime', 'storedPath');
         }
 
-        /* -------------------------------------------------------------
-         | 4) Versand über Postmark
-         *-------------------------------------------------------------*/
+        // Postmark erwartet: null = keine Attachments (leeres Array löst Fehler aus)
+        $pmAttachments = $pmAttachments ?: null;
 
-        // … Attachment-Schleife oben …
-        
-        $pmAttachments = empty($pmAttachments) ? null : $pmAttachments;
-        $headersArray  = [['Name' => 'X-Conversation-Token', 'Value' => $token]];
+        /* --------------------------------------------------------- */
+        /* 4) Header nur setzen, wenn auch Attachments existieren    */
+        /* --------------------------------------------------------- */
+        $headersArray = $pmAttachments
+            ? [['Name' => 'X-Conversation-Token', 'Value' => $token]]
+            : null;
 
+        /* --------------------------------------------------------- */
+        /* 5) Versand                                                */
+        /* --------------------------------------------------------- */
         $this->client->sendEmail(
-            $opt['from']        ?? $this->cfg['from'],                 // 1 from
-            $to,                                                      // 2 to
-            $subject,                                                 // 3 subject
-            $htmlBody,                                                // 4 html
-            $textBody,                                                // 5 text
-            $opt['tag']         ?? $this->cfg['defaults']['tag'],      // 6 tag
-            $opt['track_opens'] ?? $this->cfg['defaults']['track_opens'], // 7 trackOpens
-            $opt['reply_to']    ?? null,                              // 8 reply-to
-            $opt['cc']          ?? null,                              // 9 cc
-            $opt['bcc']         ?? null,                              //10 bcc
-            $pmAttachments,                                           //11 attachments
-            $headersArray,                                            //12 headers
-            $opt['track_links'] ?? $this->cfg['defaults']['track_links'], //13 trackLinks  (STRING)
-            null,                                                     //14 metadata      (ARRAY/NULL)
-            $opt['stream']      ?? $this->cfg['message_stream'],      //15 messageStream (STRING/NULL)
+            $opt['from']        ?? $this->cfg['from'],                      // 1
+            $to,                                                           // 2
+            $subject,                                                      // 3
+            $htmlBody,                                                     // 4
+            $textBody,                                                     // 5
+            $opt['tag']         ?? $this->cfg['defaults']['tag'],          // 6 Tag
+            $opt['track_opens'] ?? $this->cfg['defaults']['track_opens'],  // 7 TrackOpens
+            $opt['reply_to']    ?? null,                                   // 8 Reply-To
+            $opt['cc']          ?? null,                                   // 9 CC
+            $opt['bcc']         ?? null,                                   //10 BCC
+            $pmAttachments,                                                //11 Attachments (null|array)
+            $headersArray,                                                 //12 Headers (null|array)
+            $opt['track_links'] ?? $this->cfg['defaults']['track_links'],  //13 TrackLinks (string)
+            null,                                                          //14 Metadata   (null)
+            $opt['stream']      ?? $this->cfg['message_stream'],           //15 MessageStream
         );
 
-        /* -------------------------------------------------------------
-         | 5) OutboundMail speichern
-         *-------------------------------------------------------------*/
+        /* --------------------------------------------------------- */
+        /* 6) OutboundMail speichern                                 */
+        /* --------------------------------------------------------- */
         $mail = new OutboundMail([
             'thread_id' => $thread->id,
-            'from'      => $opt['from']     ?? $this->cfg['from'],
+            'from'      => $opt['from'] ?? $this->cfg['from'],
             'to'        => $to,
-            'cc'        => $opt['cc']      ?? null,
-            'bcc'       => $opt['bcc']     ?? null,
-            'reply_to'  => $opt['reply_to']?? null,
+            'cc'        => $opt['cc']  ?? null,
+            'bcc'       => $opt['bcc'] ?? null,
+            'reply_to'  => $opt['reply_to'] ?? null,
             'subject'   => $subject,
             'html_body' => $htmlBody,
             'text_body' => $textBody,
             'sent_at'   => now(),
-            'meta'      => ['attachments' => count($files)],
         ]);
+        $mail->thread()->associate($thread);
 
-        // FK-Zuordnungen (User / Team / polymorph)
+        // Absender verknüpfen (User, Team oder polymorph)
         if (isset($opt['sender'])) {
             $actor = $opt['sender'];
             if ($actor instanceof \App\Models\User) {
                 $mail->user()->associate($actor);
             } elseif ($actor instanceof \App\Models\Team) {
                 $mail->team()->associate($actor);
-            } elseif ($actor) {
+            } else {
                 $mail->sender()->associate($actor);
             }
         }
-
-        $mail->thread()->associate($thread);
         $mail->save();
 
-        /* -------------------------------------------------------------
-         | 6) Attachments persistieren
-         *-------------------------------------------------------------*/
-        foreach ($mailAttachmentsMeta as $meta) {
+        /* --------------------------------------------------------- */
+        /* 7) Attachments persistieren                               */
+        /* --------------------------------------------------------- */
+        foreach ($storedAttachments as $a) {
             $mail->attachments()->create([
-                'filename' => $meta['name'],
-                'mime'     => $meta['mime'],
-                'size'     => $meta['size'],
+                'filename' => $a['name'],
+                'mime'     => $a['mime'],
+                'size'     => Storage::disk('emails')->size($a['storedPath']),
                 'disk'     => 'emails',
-                'path'     => $meta['storedPath'],
+                'path'     => $a['storedPath'],
                 'inline'   => false,
             ]);
         }
