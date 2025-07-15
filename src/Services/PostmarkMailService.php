@@ -106,8 +106,9 @@ class PostmarkMailService
          | 4) Versand über Postmark
          *-------------------------------------------------------------*/
 
-        $pmAttachments = count($pmAttachments) ? $pmAttachments : null;
-        
+        // … Attachment-Schleife oben …
+        $pmAttachments = empty($pmAttachments) ? null : $pmAttachments;
+
         $this->client->sendEmail(
             $opt['from']        ?? $this->cfg['from'],
             $to,
@@ -119,11 +120,11 @@ class PostmarkMailService
             $opt['reply_to']    ?? null,
             $opt['cc']          ?? null,
             $opt['bcc']         ?? null,
-            $pmAttachments,
+            $pmAttachments,                                     // ← jetzt null oder Array
             [['Name' => 'X-Conversation-Token', 'Value' => $token]],
-            $opt['track_links'] ?? $this->cfg['defaults']['track_links'], // ← 13
-            null,                                                        // ← 14 metadata
-            $opt['stream']      ?? $this->cfg['message_stream'],          // ← 15 messageStream
+            $opt['track_links'] ?? $this->cfg['defaults']['track_links'],
+            null,                                               // metadata
+            $opt['stream']      ?? $this->cfg['message_stream'],
         );
 
         /* -------------------------------------------------------------
