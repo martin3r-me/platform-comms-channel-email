@@ -108,8 +108,7 @@ class PostmarkMailService
 
         // … Attachment-Schleife oben …
         $pmAttachments = empty($pmAttachments) ? null : $pmAttachments;
-
-        logger($pmAttachments);
+        $headersArray  = [['Name' => 'X-Conversation-Token', 'Value' => $token]];
 
         $this->client->sendEmail(
             $opt['from']        ?? $this->cfg['from'],
@@ -122,11 +121,11 @@ class PostmarkMailService
             $opt['reply_to']    ?? null,
             $opt['cc']          ?? null,
             $opt['bcc']         ?? null,
-            $pmAttachments,                                     // ← jetzt null oder Array
-            [['Name' => 'X-Conversation-Token', 'Value' => $token]],
-            $opt['track_links'] ?? $this->cfg['defaults']['track_links'],
-            null,                                               // metadata
-            $opt['stream']      ?? $this->cfg['message_stream'],
+            $pmAttachments,                     // 11  Attachments
+            $headersArray,                      // 12  Headers
+            $opt['stream']      ?? $this->cfg['message_stream'], // 13  MessageStream
+            $opt['track_links'] ?? $this->cfg['defaults']['track_links'], // 14 TrackLinks
+            null                                // 15  Metadata
         );
 
         /* -------------------------------------------------------------
