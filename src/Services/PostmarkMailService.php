@@ -26,7 +26,7 @@ class PostmarkMailService
 
     public function __construct(Config $config)
     {
-        $this->cfg    = $config->get('postmark_mailer');
+        $this->cfg    = $config->get('inbound-outbound-mail');
         $this->client = new PostmarkClient($this->cfg['server_token']);
     }
 
