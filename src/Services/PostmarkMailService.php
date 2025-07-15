@@ -107,25 +107,26 @@ class PostmarkMailService
          *-------------------------------------------------------------*/
 
         // … Attachment-Schleife oben …
+        
         $pmAttachments = empty($pmAttachments) ? null : $pmAttachments;
         $headersArray  = [['Name' => 'X-Conversation-Token', 'Value' => $token]];
 
         $this->client->sendEmail(
-            $opt['from']        ?? $this->cfg['from'],
-            $to,
-            $subject,
-            $htmlBody,
-            $textBody,
-            $opt['tag']         ?? $this->cfg['defaults']['tag'],
-            $opt['track_opens'] ?? $this->cfg['defaults']['track_opens'],
-            $opt['reply_to']    ?? null,
-            $opt['cc']          ?? null,
-            $opt['bcc']         ?? null,
-            $pmAttachments,                     // 11  Attachments
-            $headersArray,                      // 12  Headers
-            $opt['stream']      ?? $this->cfg['message_stream'], // 13  MessageStream
-            $opt['track_links'] ?? $this->cfg['defaults']['track_links'], // 14 TrackLinks
-            null                                // 15  Metadata
+            $opt['from']        ?? $this->cfg['from'],                 // 1 from
+            $to,                                                      // 2 to
+            $subject,                                                 // 3 subject
+            $htmlBody,                                                // 4 html
+            $textBody,                                                // 5 text
+            $opt['tag']         ?? $this->cfg['defaults']['tag'],      // 6 tag
+            $opt['track_opens'] ?? $this->cfg['defaults']['track_opens'], // 7 trackOpens
+            $opt['reply_to']    ?? null,                              // 8 reply-to
+            $opt['cc']          ?? null,                              // 9 cc
+            $opt['bcc']         ?? null,                              //10 bcc
+            $pmAttachments,                                           //11 attachments
+            $headersArray,                                            //12 headers
+            $opt['track_links'] ?? $this->cfg['defaults']['track_links'], //13 trackLinks  (STRING)
+            null,                                                     //14 metadata      (ARRAY/NULL)
+            $opt['stream']      ?? $this->cfg['message_stream'],      //15 messageStream (STRING/NULL)
         );
 
         /* -------------------------------------------------------------
