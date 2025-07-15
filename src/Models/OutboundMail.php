@@ -72,14 +72,34 @@ class OutboundMail extends Model
         return $this->belongsTo(Thread::class);
     }
 
-    public function user()
+    /**
+     * Absender-User – nur, wenn im Projekt ein User-Model existiert.
+     *
+     * @return BelongsTo|null
+     */
+    public function user(): ?BelongsTo
     {
-        return $this->belongsTo(config('auth.providers.users.model'));
+        $model = config('auth.providers.users.model');
+
+        return ($model && class_exists($model))
+            ? $this->belongsTo($model, 'user_id')
+            : null;
     }
 
-    public function team()
+    /**
+     * Absender-Team – nur, wenn ein Team-Model existiert.
+     *
+     * @return BelongsTo|null
+     */
+    public function team(): ?BelongsTo
     {
-        return $this->belongsTo(\App\Models\Team::class);
+        $model = class_exists('\App\Models\Team')
+               ? '\App\Models\Team'
+               : null;
+
+        return $model
+            ? $this->belongsTo($model, 'team_id')
+            : null;
     }
 
     /** Polymorpher Fallback-Absender (z. B. Bot, SystemUser, …) */
