@@ -26,6 +26,15 @@ class InboundOutboundMailServiceProvider extends ServiceProvider
             __DIR__ . '/../resources/views' => resource_path('views/vendor/laravel-inbound-outbound-mail'),
         ], 'views');
 
+        // routes
+        $this->loadRoutesFrom(__DIR__.'/routes/inbound.php');
+
+        // middleware alias
+        $this->app['router']->aliasMiddleware(
+            'verify.postmark',
+            \Martin3r\LaravelInboundOutboundMail\Http\Middleware\VerifyPostmark::class
+        );
+
         // Livewire-Komponente registrieren
         if (class_exists(Livewire::class)) {
             
