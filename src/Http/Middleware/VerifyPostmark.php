@@ -1,22 +1,24 @@
 <?php
-
-
 namespace Martin3r\LaravelInboundOutboundMail\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
 
-class VerifyPostmark
+class VerifyPostmarkBasic
 {
     public function handle(Request $request, Closure $next)
     {
-        $raw      = $request->getContent();
-        $header   = $request->header('X-Postmark-Signature');
-        $secret   = env('POSTMARK_INBOUND_SECRET');
+        $expected = base64_encode(
+            env('POSTMARK_INBOUND_USER').':'.env('POSTMARK_INBOUND_PASS')
+        );
 
-        $expected = base64_encode(hash_hmac('sha256', $raw, $secret, true));
-
-        abort_unless(hash_equals($expected, $header), 401, 'Invalid signature.');
+        // Header ist "Basic {base64}"
+        $header = $request->header('Authorization');
+        abort_unless(
+            $header === 'Basic '.$expected,
+            401,
+            'Invalid Postmark credentials.'
+        );
 
         return $next($request);
     }

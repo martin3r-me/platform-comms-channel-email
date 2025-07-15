@@ -31,8 +31,8 @@ class InboundOutboundMailServiceProvider extends ServiceProvider
 
         // middleware alias
         $this->app['router']->aliasMiddleware(
-            'verify.postmark',
-            \Martin3r\LaravelInboundOutboundMail\Http\Middleware\VerifyPostmark::class
+            'verify.postmark.basic',
+            \Martin3r\LaravelInboundOutboundMail\Http\Middleware\VerifyPostmarkBasic::class
         );
 
         // Livewire-Komponente registrieren
