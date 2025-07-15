@@ -118,8 +118,9 @@ class PostmarkMailService
             $opt['bcc']         ?? null,
             $pmAttachments,
             [['Name' => 'X-Conversation-Token', 'Value' => $token]],
-            $opt['stream']      ?? $this->cfg['message_stream'],
-            $opt['track_links'] ?? $this->cfg['defaults']['track_links'],
+            $opt['track_links'] ?? $this->cfg['defaults']['track_links'], // ← 13
+            null,                                                        // ← 14 metadata
+            $opt['stream']      ?? $this->cfg['message_stream'],          // ← 15 messageStream
         );
 
         /* -------------------------------------------------------------
