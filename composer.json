@@ -1,17 +1,18 @@
 {
-  "name": "martin3r-me/laravel-activity-log",
+  "name": "martin3r-me/laravel-inbound-outbound-mail",
   "require": {
-        "martin3r-me/laravel-ui-elements": "dev-main"
+    "martin3r-me/laravel-ui-elements": "dev-main",
+    "wildbit/postmark-php": "^7.0"
     },
   "autoload": {
     "psr-4": {
-      "Martin3r\\LaravelActivityLog\\": "src/"
+      "Martin3r\\LaravelInboundOutboundMail\\": "src/"
     }
   },
   "extra": {
     "laravel": {
       "providers": [
-        "Martin3r\\LaravelActivityLog\\ActivityLogServiceProvider"
+        "Martin3r\\LaravelInboundOutboundMail\\InboundOutboundMailServiceProvider"
       ]
     }
   }

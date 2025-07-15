@@ -1,17 +1,17 @@
 <?php
 
-namespace Martin3r\LaravelActivityLog;
+namespace Martin3r\LaravelInboundOutboundMail;
 
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
-class ActivityLogServiceProvider extends ServiceProvider
+class InboundOutboundMailServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
         // Config publishen
         $this->publishes([
-            __DIR__ . '/../config/activity-log.php' => config_path('activity-log.php'),
+            __DIR__ . '/../config/inbound-outbound-mail.php' => config_path('inbound-outbound-mail.php'),
         ], 'config');
 
         // Migrationen laden & publishen
@@ -21,17 +21,14 @@ class ActivityLogServiceProvider extends ServiceProvider
         ], 'migrations');
 
         // Views laden & publishen
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'laravel-activity-log');
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'laravel-inbound-outbound-mail');
         $this->publishes([
-            __DIR__ . '/../resources/views' => resource_path('views/vendor/laravel-activity-log'),
+            __DIR__ . '/../resources/views' => resource_path('views/vendor/laravel-inbound-outbound-mail'),
         ], 'views');
 
         // Livewire-Komponente registrieren
         if (class_exists(Livewire::class)) {
-            Livewire::component(
-                'activities-index',
-                \Martin3r\LaravelActivityLog\Http\Livewire\Activities\Index::class
-            );
+            
         }
     }
 
@@ -39,8 +36,8 @@ class ActivityLogServiceProvider extends ServiceProvider
     {
         // Config-Merge
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/activity-log.php',
-            'activity-log'
+            __DIR__ . '/../config/inbound-outbound-mail.php',
+            'inbound-outbound-mail'
         );
     }
 }
