@@ -105,6 +105,9 @@ class PostmarkMailService
         /* -------------------------------------------------------------
          | 4) Versand über Postmark
          *-------------------------------------------------------------*/
+
+        $pmAttachments = count($pmAttachments) ? $pmAttachments : null;
+        
         $this->client->sendEmail(
             $opt['from']        ?? $this->cfg['from'],
             $to,
