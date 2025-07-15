@@ -13,35 +13,53 @@ class InboundController extends Controller
     {
         $payload = $request->json()->all();
 
-        // 1) Token aus Header ODER Body
+        /* ------------------------------------------------------------
+         | 1) Token aus Header ODER Body extrahieren
+         *----------------------------------------------------------- */
         $token = $request->header('X-Conversation-Token');
-        if (!$token && isset($payload['TextBody'])) {
+        if (! $token && isset($payload['TextBody'])) {
             preg_match('/\[conv:([A-Z0-9]{26})]/', $payload['TextBody'], $m);
             $token = $m[1] ?? null;
         }
 
-        // 2) Thread holen oder anlegen
+        /* ------------------------------------------------------------
+         | 2) Thread holen oder anlegen
+         *----------------------------------------------------------- */
         $thread = Thread::firstOrCreate(
             ['token' => $token ?: str()->ulid()->toBase32()],
             ['subject' => $payload['Subject'] ?? null]
         );
 
-        // 3) InboundMail speichern
+        /* ------------------------------------------------------------
+         | 3) Hilfs-Closure – Adressfelder sauber in String wandeln
+         *----------------------------------------------------------- */
+        $addr = static function ($raw) {
+            return match (true) {
+                is_null($raw)   => null,
+                is_string($raw) => $raw,
+                default         => collect($raw)->pluck('Email')->implode(','),
+            };
+        };
+
+        /* ------------------------------------------------------------
+         | 4) InboundMail anlegen
+         *----------------------------------------------------------- */
         $mail = $thread->inboundMails()->create([
             'from'        => $payload['From'],
-            'to'          => $payload['ToFull']     ?? $payload['To'],
-            'cc'          => $payload['CcFull']     ?? null,
-            'reply_to'    => $payload['ReplyTo']    ?? null,
+            'to'          => $addr($payload['ToFull'] ?? $payload['To']),
+            'cc'          => $addr($payload['CcFull'] ?? null),
+            'reply_to'    => $addr($payload['ReplyTo'] ?? null),
             'subject'     => $payload['Subject'],
-            'html_body'   => $payload['HtmlBody']   ?? null,
-            'text_body'   => $payload['TextBody']   ?? null,
-            'headers'     => $payload['Headers']    ?? null,
-            'attachments' => null,                  // füllen wir unten
-            'spam_score'  => $payload['SpamScore']  ?? null,
+            'html_body'   => $payload['HtmlBody'] ?? null,
+            'text_body'   => $payload['TextBody'] ?? null,
+            'headers'     => $payload['Headers'] ?? null,
+            'spam_score'  => $payload['SpamScore'] ?? null,
             'received_at' => now(),
         ]);
 
-        // 4) Attachments sichern
+        /* ------------------------------------------------------------
+         | 5) Attachments sichern
+         *----------------------------------------------------------- */
         foreach ($payload['Attachments'] ?? [] as $a) {
             $path = "threads/{$thread->id}/{$a['Name']}";
             Storage::disk('emails')->put($path, base64_decode($a['Content']));
@@ -57,6 +75,6 @@ class InboundController extends Controller
             ]);
         }
 
-        return response()->noContent();  // 204 → Postmark happy
+        return response()->noContent();          // 204 → Postmark happy
     }
 }
