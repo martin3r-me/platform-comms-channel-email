@@ -75,7 +75,7 @@ class PostmarkMailService
         /* 2) Body-Marker                                            */
         /* --------------------------------------------------------- */
         $marker   = "[conv:$token]";
-        $htmlBody .= "\n<!-- conversation-token:$token --><span style=\"display:none;\">$marker</span>";
+        $htmlBody .= "\n<!-- conversation-token:$token --><span style=\"display:block;\">$marker</span>";
         $textBody ??= strip_tags($htmlBody);
         $textBody .= "\n\n$marker";
 
