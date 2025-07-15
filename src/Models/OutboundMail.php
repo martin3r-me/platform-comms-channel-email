@@ -88,7 +88,7 @@ class OutboundMail extends Model
      *
      * @return BelongsTo|null
      */
-    public function user()
+    public function team()
     {
         return $this->belongsTo(App\Models\Team::class);
     }
