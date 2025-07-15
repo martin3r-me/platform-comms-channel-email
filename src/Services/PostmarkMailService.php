@@ -109,6 +109,8 @@ class PostmarkMailService
         // … Attachment-Schleife oben …
         $pmAttachments = empty($pmAttachments) ? null : $pmAttachments;
 
+        logger($pmAttachments);
+
         $this->client->sendEmail(
             $opt['from']        ?? $this->cfg['from'],
             $to,
