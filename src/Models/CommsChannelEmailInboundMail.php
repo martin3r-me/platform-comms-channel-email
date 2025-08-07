@@ -1,30 +1,16 @@
 <?php
 
-
-namespace Martin3r\LaravelInboundOutboundMail\Models;
+namespace Platform\Comms\ChannelEmail\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Repräsentiert eine eingehende E-Mail, die Postmark per Webhook geliefert hat.
+ * Modell: Platform\Comms\ChannelEmail\Models\CommsChannelEmailInboundMail
  *
- * Spalten (relevant):
- *  - id                INT          PK
- *  - thread_id         INT          FK → threads.id
- *  - postmark_id       VARCHAR      (MessageID aus Postmark, optional)
- *  - from, to, cc      TEXT/STRING
- *  - reply_to          STRING (nullable)
- *  - subject           STRING
- *  - html_body         LONGTEXT (nullable)
- *  - text_body         LONGTEXT (nullable)
- *  - headers           JSON (nullable)
- *  - attachments       JSON (nullable)
- *  - spam_score        DECIMAL 5,2  (nullable)
- *  - received_at       TIMESTAMP (nullable)
- *  - created_at / updated_at / deleted_at
+ * Repräsentiert eine eingehende E-Mail, verarbeitet über Postmark (Inbound Webhook).
  */
-class InboundMail extends Model
+class CommsChannelEmailInboundMail extends Model
 {
     use SoftDeletes;
 
@@ -33,6 +19,10 @@ class InboundMail extends Model
      *-----------------------------------------------------------------------*/
     protected $fillable = [
         'thread_id',
+        'user_id',
+        'team_id',
+        'sender_type',
+        'sender_id',
         'postmark_id',
         'from',
         'to',
@@ -62,11 +52,16 @@ class InboundMail extends Model
      *-----------------------------------------------------------------------*/
     public function attachments()
     {
-        return $this->morphMany(MailAttachment::class, 'mail');
+        return $this->morphMany(CommsChannelEmailMailAttachment::class, 'mail');
     }
 
     public function thread()
     {
-        return $this->belongsTo(Thread::class);
+        return $this->belongsTo(CommsChannelEmailThread::class, 'thread_id');
+    }
+
+    public function sender()
+    {
+        return $this->morphTo();
     }
 }

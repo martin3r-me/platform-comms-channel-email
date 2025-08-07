@@ -1,19 +1,21 @@
 {
-  "name": "martin3r-me/laravel-inbound-outbound-mail",
+  "name": "martin3r/platform-comms-channel-email",
+  "type": "library",
   "require": {
-    "martin3r-me/laravel-ui-elements": "dev-main",
     "wildbit/postmark-php": "^7.0"
     },
   "autoload": {
     "psr-4": {
-      "Martin3r\\LaravelInboundOutboundMail\\": "src/"
+      "Platform\\Comms\\ChannelEmail\\": "src/"
     }
   },
   "extra": {
     "laravel": {
       "providers": [
-        "Martin3r\\LaravelInboundOutboundMail\\InboundOutboundMailServiceProvider"
+        "Platform\\Comms\\ChannelEmail\\ChannelEmailServiceProvider"
       ]
     }
-  }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }

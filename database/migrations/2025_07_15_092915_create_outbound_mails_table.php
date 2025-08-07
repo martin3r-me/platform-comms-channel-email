@@ -6,30 +6,24 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        // -------------------------------------------------
-        // Tabelle anlegen
-        // -------------------------------------------------
-        Schema::create('outbound_mails', function (Blueprint $table) {
+        Schema::create('comms_channel_email_outbound_mails', function (Blueprint $table) {
             $table->id();
 
             // Thread-Bezug
             $table->foreignId('thread_id')
-                  ->constrained('threads')
+                  ->constrained('comms_channel_email_threads')
                   ->cascadeOnDelete();
 
-            // optionale User-/Team-Spalten (ohne FK vorerst)
+            // Optionale User-/Team-Zuordnung
             $table->unsignedBigInteger('user_id')->nullable()->index();
             $table->unsignedBigInteger('team_id')->nullable()->index();
 
             // polymorpher Fallback-Sender
-            $table->nullableMorphs('sender');   // sender_type + sender_id
+            $table->nullableMorphs('sender');
 
-            // Kopfzeilen & Postmark-Meta
+            // Kopfzeilen & Postmark-Metadaten
             $table->string('postmark_id')->nullable()->index();
             $table->string('from');
             $table->text('to');
@@ -48,11 +42,8 @@ return new class extends Migration
             $table->softDeletes();
         });
 
-        // -------------------------------------------------
-        // FK-Constraints nur hinzufügen, wenn Tabellen existieren
-        // -------------------------------------------------
         if (Schema::hasTable('users')) {
-            Schema::table('outbound_mails', function (Blueprint $table) {
+            Schema::table('comms_channel_email_outbound_mails', function (Blueprint $table) {
                 $table->foreign('user_id')
                       ->references('id')->on('users')
                       ->nullOnDelete();
@@ -60,7 +51,7 @@ return new class extends Migration
         }
 
         if (Schema::hasTable('teams')) {
-            Schema::table('outbound_mails', function (Blueprint $table) {
+            Schema::table('comms_channel_email_outbound_mails', function (Blueprint $table) {
                 $table->foreign('team_id')
                       ->references('id')->on('teams')
                       ->nullOnDelete();
@@ -68,11 +59,8 @@ return new class extends Migration
         }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('outbound_mails');
+        Schema::dropIfExists('comms_channel_email_outbound_mails');
     }
 };

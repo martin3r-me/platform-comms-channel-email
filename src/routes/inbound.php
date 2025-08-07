@@ -1,8 +1,8 @@
 <?php
+
 use Illuminate\Support\Facades\Route;
-use Martin3r\LaravelInboundOutboundMail\Http\Controllers\InboundController;
+use Platform\Comms\ChannelEmail\Http\Controllers\InboundPostmarkController;
 
-
-Route::post('/postmark/inbound', InboundController::class)
-     ->middleware('verify.postmark.basic')
-     ->name('postmark.inbound');
+Route::post('/postmark/inbound', InboundPostmarkController::class)
+    ->middleware('verify.postmark.basic')
+    ->name('comms.channel.email.postmark.inbound');

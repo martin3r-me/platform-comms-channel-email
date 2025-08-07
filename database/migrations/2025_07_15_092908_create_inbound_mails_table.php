@@ -1,41 +1,34 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        // -------------------------------------------------
-        // Haupt-Tabelle
-        // -------------------------------------------------
-        Schema::create('inbound_mails', function (Blueprint $table) {
+        Schema::create('comms_channel_email_inbound_mails', function (Blueprint $table) {
             $table->id();
 
             // Thread-Bezug
             $table->foreignId('thread_id')
-                  ->constrained('threads')
+                  ->constrained('comms_channel_email_threads')
                   ->cascadeOnDelete();
 
-            // optionale User/Team-Spalten (ohne FK vorerst)
+            // Optionale User-/Team-Zuordnung
             $table->unsignedBigInteger('user_id')->nullable()->index();
             $table->unsignedBigInteger('team_id')->nullable()->index();
 
-            // polymorpher Fallback-Sender (falls neither user noch team)
-            $table->nullableMorphs('sender');   // sender_type + sender_id
+            // polymorpher Fallback-Sender
+            $table->nullableMorphs('sender');
 
-            // Kopfzeilen (BCC kommt bei Inbound nicht mit)
+            // Kopfzeilen
             $table->string('from');
             $table->text('to');
             $table->text('cc')->nullable();
             $table->string('reply_to')->nullable();
 
-            // Postmark-Meta & Inhalt
+            // Postmark-Metadaten & Inhalt
             $table->string('postmark_id')->nullable()->index();
             $table->string('subject');
             $table->longText('html_body')->nullable();
@@ -51,31 +44,22 @@ return new class extends Migration
             $table->softDeletes();
         });
 
-        // -------------------------------------------------
-        // optionale FK-Constraints nachträglich ergänzen
-        // -------------------------------------------------
+        // FK-Constraints optional nachträglich
         if (Schema::hasTable('users')) {
-            Schema::table('inbound_mails', function (Blueprint $table) {
-                $table->foreign('user_id')
-                      ->references('id')->on('users')
-                      ->nullOnDelete();
+            Schema::table('comms_channel_email_inbound_mails', function (Blueprint $table) {
+                $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
             });
         }
 
         if (Schema::hasTable('teams')) {
-            Schema::table('inbound_mails', function (Blueprint $table) {
-                $table->foreign('team_id')
-                      ->references('id')->on('teams')
-                      ->nullOnDelete();
+            Schema::table('comms_channel_email_inbound_mails', function (Blueprint $table) {
+                $table->foreign('team_id')->references('id')->on('teams')->nullOnDelete();
             });
         }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('inbound_mails');
+        Schema::dropIfExists('comms_channel_email_inbound_mails');
     }
 };
