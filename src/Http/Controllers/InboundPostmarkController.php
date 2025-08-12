@@ -9,7 +9,7 @@ use Platform\Comms\ChannelEmail\Models\{
     CommsChannelEmailThread as Thread,
     CommsChannelEmailInboundMail as InboundMail
 };
-use Platform\Crm\Services\ContactLinkService;
+
 
 class InboundPostmarkController extends Controller
 {
@@ -80,19 +80,7 @@ class InboundPostmarkController extends Controller
             ]);
         }
 
-        // ------------------------------------------------------------
-        // 6) Automatisches Contact-Linking
-        // ------------------------------------------------------------
-        try {
-            $contactLinkService = app(ContactLinkService::class);
-            $contactLinkService->autoLinkContacts($thread);
-        } catch (\Exception $e) {
-            // Log error but don't fail the webhook
-            \Log::error('Contact linking failed for thread ' . $thread->id, [
-                'error' => $e->getMessage(),
-                'thread_id' => $thread->id,
-            ]);
-        }
+
 
         return response()->noContent(); // 204 → Postmark happy
     }

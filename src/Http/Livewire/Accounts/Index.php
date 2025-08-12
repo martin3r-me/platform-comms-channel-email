@@ -4,7 +4,6 @@ namespace Platform\Comms\ChannelEmail\Http\Livewire\Accounts;
 
 use Livewire\Component;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\On;
 use Illuminate\Support\Str;
 use Illuminate\Support\HtmlString;
 use Platform\Comms\ChannelEmail\Models\{
@@ -12,7 +11,6 @@ use Platform\Comms\ChannelEmail\Models\{
     CommsChannelEmailThread
 };
 use Platform\Comms\ChannelEmail\Services\EmailChannelPostmarkService;
-use Platform\Crm\Services\ContactLinkService;
 
 class Index extends Component
 {
@@ -30,16 +28,43 @@ class Index extends Component
         'body' => '',
     ];
 
-    // Contact-Linking Properties
-    public $selectedContactId = null;
-    public $contactSearch = '';
-    public $modalShow = false;
-    public $selectedEmailAddress = '';
-    public $showEmailSelection = false;
-
     public string $replyBody = '';
     public array $context = [];
     public bool $showContextDetails = false;
+    public string $activeTab = 'messages';
+    
+    // Settings-Properties
+    public string $editName = '';
+    public string $userSearch = '';
+    public bool $showUserModal = false;
+    
+    #[Computed]
+    public function threads()
+    {
+        return $this->account->threads()->latest()->get();
+    }
+
+    #[Computed]
+    public function sharedUsers()
+    {
+        return $this->account->sharedUsers()->with('currentTeam')->get();
+    }
+
+    #[Computed]
+    public function availableUsers()
+    {
+        $currentUser = auth()->user();
+        $team = $currentUser->currentTeam;
+        
+        if (!$team) {
+            return collect();
+        }
+
+        return $team->users()
+            ->where('users.id', '!=', $currentUser->id)
+            ->whereNotIn('users.id', $this->account->sharedUsers->pluck('id'))
+            ->get();
+    }
 
     public function mount(int $account_id, array $context = []): void
     {
@@ -50,7 +75,7 @@ class Index extends Component
 
     public function startNewMessage(): void
     {
-        $this->reset('activeThread', 'replyBody', 'activeMessageId', 'activeMessageDirection', 'selectedContactId');
+        $this->reset('activeThread', 'replyBody', 'activeMessageId', 'activeMessageDirection');
         $this->composeMode = true;
 
         $this->compose['to'] = collect($this->context['recipients'] ?? [])
@@ -79,7 +104,7 @@ class Index extends Component
 
     public function cancelCompose(): void
     {
-        $this->reset('compose', 'composeMode', 'selectedContactId');
+        $this->reset('compose', 'composeMode');
     }
 
     public function selectThread(int $threadId, int $messageId = null, string $direction = null): void
@@ -89,68 +114,6 @@ class Index extends Component
         $this->activeMessageDirection = $direction;
         $this->composeMode = false;
         $this->replyBody = '';
-    }
-
-    // Contact-Linking Methods
-    public function openContactModal(): void
-    {
-        $this->modalShow = true;
-    }
-
-    public function closeContactModal(): void
-    {
-        $this->modalShow = false;
-        $this->contactSearch = '';
-    }
-
-    public function selectContact($contactId): void
-    {
-        $contactLinkService = app(ContactLinkService::class);
-        $contact = $contactLinkService->findContactById($contactId);
-        
-        if ($contact) {
-            $this->selectedContactId = $contactId;
-            $this->showEmailSelection = true;
-            $this->contactSearch = '';
-        }
-    }
-
-    public function selectEmailAddress($emailAddress): void
-    {
-        $this->selectedEmailAddress = $emailAddress;
-        $this->compose['to'] = $emailAddress;
-        $this->modalShow = false;
-        $this->showEmailSelection = false;
-        $this->selectedEmailAddress = '';
-    }
-
-    public function useNewEmailAddress(): void
-    {
-        $this->selectedContactId = null; // Kein Kontakt verlinkt
-        $this->modalShow = false;
-        $this->showEmailSelection = false;
-        $this->selectedEmailAddress = '';
-    }
-
-    #[Computed]
-    public function contacts()
-    {
-        $contactLinkService = app(ContactLinkService::class);
-        return $contactLinkService->searchContacts($this->contactSearch);
-    }
-
-    #[Computed]
-    public function threads()
-    {
-        return $this->account->threads()->latest()->get();
-    }
-
-    #[Computed]
-    public function contextBlockHtml()
-    {
-        return $this->showContextDetails && !empty($this->context)
-            ? $this->getContextBlock()->toHtml()
-            : null;
     }
 
     public function sendNewMessage(): void
@@ -169,7 +132,7 @@ class Index extends Component
             $htmlBody .= '<hr>' . $this->getContextBlock()->toHtml();
         }
 
-        $token = app(EmailChannelPostmarkService::class)->send(
+        app(EmailChannelPostmarkService::class)->send(
             account: $this->account,
             to: $this->compose['to'],
             subject: $this->compose['subject'],
@@ -182,43 +145,7 @@ class Index extends Component
             ]
         );
 
-        // Automatisches Contact-Linking
-        if ($token) {
-            // Thread anhand des Tokens finden
-            $thread = CommsChannelEmailThread::where('token', $token)->first();
-            
-            if ($thread) {
-                $contactLinkService = app(ContactLinkService::class);
-                
-                if ($this->selectedContactId) {
-                    // Kontakt wurde ausgewählt - verlinken und E-Mail-Adresse hinzufügen
-                    $contact = $contactLinkService->findContactById($this->selectedContactId);
-                    if ($contact) {
-                        $contactLinkService->createContactLink($thread, $contact);
-                        $contactLinkService->addEmailToContact($contact, $this->compose['to']);
-                    }
-                } else {
-                    // Kein Kontakt ausgewählt - prüfen ob E-Mail bereits existiert
-                    $existingContact = $contactLinkService->findContactsByEmailAddresses([$this->compose['to']])->first();
-                    
-                    if ($existingContact) {
-                        // E-Mail-Adresse existiert bereits - bestehenden Kontakt verwenden
-                        $contactLinkService->createContactLink($thread, $existingContact);
-                    } else {
-                        // E-Mail-Adresse existiert nicht - neuen Kontakt anlegen
-                        $contact = $contactLinkService->createContact([
-                            'first_name' => 'Unbekannt',
-                            'last_name' => 'Kontakt',
-                            'email' => $this->compose['to'],
-                            'team_visible' => true,
-                        ]);
-                        $contactLinkService->createContactLink($thread, $contact);
-                    }
-                }
-            }
-        }
-
-        $this->reset('compose', 'composeMode', 'selectedContactId', 'selectedEmailAddress');
+        $this->reset('compose', 'composeMode');
         $this->account->refresh();
     }
 
@@ -294,8 +221,53 @@ class Index extends Component
         return new HtmlString($html);
     }
 
+    // Settings-Methoden
+    public function startEditName(): void
+    {
+        $this->editName = $this->account->name ?? '';
+    }
+
+    public function saveName(): void
+    {
+        $this->validate([
+            'editName' => 'required|string|max:255',
+        ]);
+
+        $this->account->update(['name' => $this->editName]);
+        $this->editName = '';
+    }
+
+    public function cancelEditName(): void
+    {
+        $this->editName = '';
+    }
+
+    public function addUser(int $userId): void
+    {
+        $user = \Platform\Core\Models\User::findOrFail($userId);
+        
+        $this->account->sharedUsers()->attach($userId, [
+            'granted_at' => now(),
+        ]);
+
+        $this->account->refresh();
+    }
+
+    public function removeUser(int $userId): void
+    {
+        $this->account->sharedUsers()->updateExistingPivot($userId, [
+            'revoked_at' => now(),
+        ]);
+
+        $this->account->refresh();
+    }
+
     public function render()
     {
-        return view('comms-channel-email::livewire.accounts.index');
+        return view('comms-channel-email::livewire.accounts.index', [
+            'contextBlockHtml' => $this->showContextDetails && !empty($this->context)
+                ? $this->getContextBlock()->toHtml()
+                : null,
+        ]);
     }
 }

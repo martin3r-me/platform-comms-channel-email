@@ -38,7 +38,7 @@ class CommsChannelEmailAccount extends Model
      */
     public function team(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Team::class);
+        return $this->belongsTo(\Platform\Core\Models\Team::class);
     }
 
     /**
@@ -46,7 +46,7 @@ class CommsChannelEmailAccount extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(config('auth.providers.users.model'));
+        return $this->belongsTo(\Platform\Core\Models\User::class);
     }
 
     /**
@@ -60,5 +60,34 @@ class CommsChannelEmailAccount extends Model
     public function threads()
     {
         return $this->hasMany(CommsChannelEmailThread::class, 'email_account_id');
+    }
+
+    /**
+     * Benutzer mit Zugriff auf dieses Konto (Many-to-Many)
+     */
+    public function sharedUsers()
+    {
+        return $this->belongsToMany(\Platform\Core\Models\User::class, 'comms_channel_email_account_user', 'account_id', 'user_id')
+                    ->withTimestamps()
+                    ->withPivot(['granted_at', 'revoked_at']);
+    }
+
+    /**
+     * Prüft, ob ein Benutzer Zugriff auf dieses Konto hat
+     */
+    public function hasUserAccess(\Platform\Core\Models\User $user): bool
+    {
+        // Besitzer hat immer Zugriff
+        if ($this->user_id === $user->id) {
+            return true;
+        }
+
+        // Team-Mitglieder haben Zugriff auf Team-Konten
+        if ($this->team_id === $user->currentTeam?->id) {
+            return true;
+        }
+
+        // Explizit geteilte Benutzer
+        return $this->sharedUsers()->where('user_id', $user->id)->exists();
     }
 }

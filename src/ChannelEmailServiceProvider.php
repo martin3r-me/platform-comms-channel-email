@@ -60,7 +60,7 @@ class ChannelEmailServiceProvider extends ServiceProvider
         // --------------------------------------------------
         $this->app['router']->aliasMiddleware(
             'verify.postmark.basic',
-            \Platform\Comms\ChannelEmail\Http\Middleware\VerifyPostmarkBasic::class
+            \Platform\Comms\ChannelEmail\Http\Middleware\VerifyPostmarkBasicAuth::class
         );
     }
 
@@ -103,7 +103,6 @@ class ChannelEmailServiceProvider extends ServiceProvider
             Livewire::component($alias, $class);
         }
 
-        // Zusätzliche Livewire-Komponenten registrieren
-        Livewire::component('comms-channel-email.contact-linker', \Platform\Comms\ChannelEmail\Livewire\ContactLinker::class);
+
     }
 }
