@@ -9,8 +9,8 @@ class VerifyPostmarkBasicAuth
 {
     public function handle(Request $request, Closure $next)
     {
-        $user = config('comms-email.inbound.username');
-        $pass = config('comms-email.inbound.password');
+        $user = config('channel-email.inbound.username');
+        $pass = config('channel-email.inbound.password');
 
         $expected = 'Basic ' . base64_encode("{$user}:{$pass}");
         $actual = $request->header('Authorization');
