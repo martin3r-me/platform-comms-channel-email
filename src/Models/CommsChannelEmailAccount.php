@@ -21,7 +21,9 @@ class CommsChannelEmailAccount extends Model
         'email',
         'name',
         'team_id',
+        'created_by_user_id',
         'user_id',
+        'ownership_type',
         'sender_type',
         'sender_id',
         'meta',
@@ -42,7 +44,15 @@ class CommsChannelEmailAccount extends Model
     }
 
     /**
-     * Optionaler Benutzer (z. B. persönliche Inbox)
+     * Benutzer, der das Konto erstellt hat
+     */
+    public function createdByUser(): BelongsTo
+    {
+        return $this->belongsTo(\Platform\Core\Models\User::class, 'created_by_user_id');
+    }
+
+    /**
+     * Optionaler Benutzer (z. B. persönliche Inbox)
      */
     public function user(): BelongsTo
     {
@@ -77,13 +87,18 @@ class CommsChannelEmailAccount extends Model
      */
     public function hasUserAccess(\Platform\Core\Models\User $user): bool
     {
-        // Besitzer hat immer Zugriff
-        if ($this->user_id === $user->id) {
+        // Ersteller hat immer Zugriff
+        if ($this->created_by_user_id === $user->id) {
+            return true;
+        }
+
+        // Privater Besitzer hat Zugriff
+        if ($this->ownership_type === 'user' && $this->user_id === $user->id) {
             return true;
         }
 
         // Team-Mitglieder haben Zugriff auf Team-Konten
-        if ($this->team_id === $user->currentTeam?->id) {
+        if ($this->ownership_type === 'team' && $this->team_id === $user->currentTeam?->id) {
             return true;
         }
 

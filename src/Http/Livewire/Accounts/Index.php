@@ -4,6 +4,7 @@ namespace Platform\Comms\ChannelEmail\Http\Livewire\Accounts;
 
 use Livewire\Component;
 use Livewire\Attributes\Computed;
+
 use Illuminate\Support\Str;
 use Illuminate\Support\HtmlString;
 use Platform\Comms\ChannelEmail\Models\{
@@ -16,6 +17,11 @@ class Index extends Component
 {
     public int $account_id;
     public CommsChannelEmailAccount $account;
+
+    protected $rules = [
+        'account.ownership_type' => 'required|in:team,user',
+        'account.user_id' => 'nullable|exists:users,id',
+    ];
 
     public bool $composeMode = false;
     public ?CommsChannelEmailThread $activeThread = null;
@@ -37,6 +43,9 @@ class Index extends Component
     public string $editName = '';
     public string $userSearch = '';
     public bool $showUserModal = false;
+
+
+
     
     #[Computed]
     public function threads()
@@ -65,6 +74,10 @@ class Index extends Component
             ->whereNotIn('users.id', $this->account->sharedUsers->pluck('id'))
             ->get();
     }
+
+
+
+
 
     public function mount(int $account_id, array $context = []): void
     {
@@ -242,6 +255,32 @@ class Index extends Component
         $this->editName = '';
     }
 
+    public function updatedAccountOwnershipType(): void
+    {
+        // Wenn zu Team gewechselt wird, user_id auf null setzen
+        if ($this->account->ownership_type === 'team') {
+            $this->account->user_id = null;
+        }
+        
+        // Wenn zu User gewechselt wird, user_id auf aktuellen User setzen
+        if ($this->account->ownership_type === 'user') {
+            $this->account->user_id = auth()->user()->id;
+        }
+        
+        $this->account->save();
+        
+        // Event dispatchen, dass sich der Account geändert hat
+        $this->dispatch('comms-account-updated', accountId: $this->account->id);
+    }
+
+    public function updatedAccountUserId(): void
+    {
+        $this->account->save();
+        
+        // Event dispatchen, dass sich der Account geändert hat
+        $this->dispatch('comms-account-updated', accountId: $this->account->id);
+    }
+
     public function addUser(int $userId): void
     {
         $user = \Platform\Core\Models\User::findOrFail($userId);
@@ -261,6 +300,8 @@ class Index extends Component
 
         $this->account->refresh();
     }
+
+
 
     public function render()
     {

@@ -3,7 +3,7 @@
     <div class="border-bottom-1 border-bottom-solid border-bottom-muted bg-muted-5 flex-shrink-0">
         <div class="d-flex items-center justify-between px-4 py-3">
             <div class="d-flex items-center gap-4">
-                @if (!$composeMode && ($activeTab ?? 'messages') === 'messages')
+                @if (($activeTab ?? 'messages') === 'messages')
                     <x-ui-button
                         variant="primary"
                         size="sm"
@@ -45,6 +45,7 @@
                             <span>Einstellungen</span>
                         </div>
                     </button>
+
                 </div>
             </div>
 
@@ -318,6 +319,7 @@
                 @endif
             </div>
         </div>
+
          @else
          {{-- Settings-Tab --}}
          <div class="flex-grow-1 overflow-y-auto">
@@ -328,6 +330,8 @@
                          <h2 class="text-2xl font-bold text-secondary mb-6">E-Mail-Konto Einstellungen</h2>
                          
                          <div class="d-flex flex-col gap-6">
+
+
                              {{-- Account-Informationen --}}
                              <div class="bg-white rounded-lg border border-muted p-6">
                                  <h3 class="text-lg font-semibold text-secondary mb-4">Account-Informationen</h3>
@@ -396,9 +400,63 @@
                                          <div class="text-secondary font-medium">{{ $account->team?->name ?: 'Kein Team zugeordnet' }}</div>
                                      </div>
                                      
+                                     {{-- Ownership Type (editierbar) --}}
                                      <div>
-                                         <label class="text-sm font-medium text-muted-foreground mb-1 block">Besitzer</label>
-                                         <div class="text-secondary font-medium">{{ $account->user?->fullname ?: 'Team-Konto' }}</div>
+                                         <label class="text-sm font-medium text-muted-foreground mb-1 block">Konto-Typ</label>
+                                         <x-ui-input-select
+                                             name="account.ownership_type"
+                                             wire:model.live="account.ownership_type"
+                                             :options="collect([
+                                                 ['id' => 'team', 'name' => 'Team-Konto (alle Team-Mitglieder haben Zugriff)'],
+                                                 ['id' => 'user', 'name' => 'Privates Konto (nur Sie haben Zugriff)']
+                                             ])"
+                                             optionValue="id"
+                                             optionLabel="name"
+                                             size="md"
+                                         />
+                                         <div class="text-xs text-muted mt-1">
+                                             @if($account->ownership_type === 'team')
+                                                 Das Konto wird dem gesamten Team zur Verfügung gestellt.
+                                             @else
+                                                 Das Konto ist privat und nur für Sie zugänglich.
+                                             @endif
+                                         </div>
+                                     </div>
+                                     
+                                     {{-- Privater Besitzer (nur bei privatem Konto) --}}
+                                     @if($account->ownership_type === 'user')
+                                         <div>
+                                             <label class="text-sm font-medium text-muted-foreground mb-1 block">Privater Besitzer</label>
+                                             <x-ui-input-select
+                                                 name="account.user_id"
+                                                 wire:model.live="account.user_id"
+                                                 :options="collect([
+                                                     ['id' => auth()->user()->id, 'name' => auth()->user()->fullname . ' (Sie)']
+                                                 ])"
+                                                 optionValue="id"
+                                                 optionLabel="name"
+                                                 size="md"
+                                             />
+                                         </div>
+                                     @endif
+                                     
+                                     <div>
+                                         <label class="text-sm font-medium text-muted-foreground mb-1 block">Erstellt von</label>
+                                         <div class="text-secondary font-medium">{{ $account->createdByUser?->fullname }}</div>
+                                     </div>
+                                     
+                                     <div>
+                                         <label class="text-sm font-medium text-muted-foreground mb-1 block">Typ</label>
+                                         <div class="text-secondary font-medium">
+                                             @if($account->ownership_type === 'team')
+                                                 <x-ui-badge variant="primary" size="sm">Team-Konto</x-ui-badge>
+                                             @else
+                                                 <x-ui-badge variant="secondary" size="sm">Privates Konto</x-ui-badge>
+                                                 @if($account->user)
+                                                     <span class="text-sm text-muted ml-2">({{ $account->user->fullname }})</span>
+                                                 @endif
+                                             @endif
+                                         </div>
                                      </div>
                                  </div>
                              </div>
@@ -479,8 +537,10 @@
              </div>
          </div>
 
-         {{-- Benutzer hinzufügen Modal --}}
-         <x-ui-modal wire:model="showUserModal" title="Benutzer hinzufügen" size="md">
+         
+
+          {{-- Benutzer hinzufügen Modal --}}
+          <x-ui-modal wire:model="showUserModal" title="Benutzer hinzufügen" size="md">
              <div class="d-flex flex-col gap-6">
                  <!-- Suchfeld -->
                  <div>

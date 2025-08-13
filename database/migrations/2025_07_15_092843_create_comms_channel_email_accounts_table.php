@@ -14,8 +14,14 @@ return new class extends Migration
             // Pflichtfeld: Team-Zugehörigkeit (FK später ergänzt)
             $table->unsignedBigInteger('team_id')->index();
 
-            // Optional: individueller Benutzer im Team
+            // Wer hat das Konto erstellt
+            $table->unsignedBigInteger('created_by_user_id')->index();
+
+            // Optional: individueller Benutzer (für private Konten)
             $table->unsignedBigInteger('user_id')->nullable()->index();
+
+            // Ownership Type: 'team' oder 'user'
+            $table->enum('ownership_type', ['team', 'user'])->default('team');
 
             $table->string('address')->unique();
             $table->string('name')->nullable();
@@ -26,6 +32,9 @@ return new class extends Migration
 
             $table->timestamps();
             $table->softDeletes();
+
+            // Unique constraint: Entweder team_id ODER user_id muss gesetzt sein
+            $table->unique(['team_id', 'user_id'], 'comms_email_ownership_unique');
         });
 
         // FK-Constraints nur hinzufügen, wenn Tabellen existieren
@@ -39,6 +48,10 @@ return new class extends Migration
 
         if (Schema::hasTable('users')) {
             Schema::table('comms_channel_email_accounts', function (Blueprint $table) {
+                $table->foreign('created_by_user_id')
+                      ->references('id')->on('users')
+                      ->cascadeOnDelete();
+                
                 $table->foreign('user_id')
                       ->references('id')->on('users')
                       ->nullOnDelete();
