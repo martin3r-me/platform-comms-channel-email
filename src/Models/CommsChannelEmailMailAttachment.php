@@ -15,6 +15,12 @@ class CommsChannelEmailMailAttachment extends Model
 {
     use SoftDeletes;
 
+    /**
+     * Erzwingt den Tabellennamen, da der Klassenname sonst zu
+     * "comms_channel_email_mail_attachments" pluralisiert würde.
+     */
+    protected $table = 'comms_channel_email_attachments';
+
     protected $fillable = [
         'filename',
         'mime',
