@@ -114,7 +114,7 @@
                             @foreach ($this->threads as $thread)
                                 @php 
                                     $threadKey = "thread-{$thread->id}";
-                                    $latestMessage = $thread->timeline()->last();
+                                    $latestMessage = $thread->timeline()->first();
                                     $isActive = $activeThread && $activeThread->id === $thread->id;
                                 @endphp
 
@@ -237,22 +237,28 @@
                             </div>
                         </div>
                     </div>
-                @elseif ($activeThread && $activeMessageId)
-                    {{-- Message-Viewer --}}
-                    @php
-                        $message = $activeThread->timeline()->firstWhere('id', $activeMessageId);
-                    @endphp
+                @elseif ($activeThread)
+                    {{-- Conversation-Viewer: kompletter Verlauf --}}
+                    <div class="d-flex flex-col flex-grow-1 overflow-hidden bg-white">
+                        {{-- Header: Thread-Infos --}}
+                        <div class="border-bottom-1 border-bottom-solid border-bottom-muted p-4 flex-shrink-0">
+                            <div class="d-flex justify-between items-start">
+                                <div class="flex-grow-1">
+                                    <h2 class="text-lg font-semibold text-secondary mb-1">
+                                        {{ $activeThread->subject ?? 'Kein Betreff' }}
+                                    </h2>
+                                    <div class="text-xs text-muted">Verlauf</div>
+                                </div>
+                            </div>
+                        </div>
 
-                    @if ($message)
-                        <div class="d-flex flex-col flex-grow-1 overflow-hidden bg-white">
-                            {{-- Message-Header --}}
-                            <div class="border-bottom-1 border-bottom-solid border-bottom-muted p-4 flex-shrink-0">
-                                <div class="d-flex justify-between items-start">
-                                    <div class="flex-grow-1">
-                                        <h2 class="text-lg font-semibold text-secondary mb-2">
-                                            {{ $message->subject ?? 'Kein Betreff' }}
-                                        </h2>
-                                        <div class="d-flex items-center gap-4 text-sm text-muted">
+                        {{-- Verlauf --}}
+                        <div class="flex-grow-1 overflow-y-auto p-6 space-y-6">
+                            @php $messages = $activeThread->timeline()->sortBy('occurred_at'); @endphp
+                            @forelse($messages as $message)
+                                <div class="d-flex flex-col gap-2">
+                                    <div class="d-flex items-center justify-between">
+                                        <div class="d-flex items-center gap-3 text-sm text-muted">
                                             <div class="d-flex items-center gap-2">
                                                 @if ($message->direction === 'inbound')
                                                     @svg('heroicon-o-arrow-down', 'w-4 h-4 text-primary')
@@ -267,44 +273,44 @@
                                                 <span>{{ \Carbon\Carbon::parse($message->occurred_at)->format('d.m.Y H:i') }}</span>
                                             </div>
                                             <x-ui-badge 
-                                                variant="{{ $message->direction === 'inbound' ? 'primary' : 'secondary' }}"
+                                                variant="{{ $message->direction === 'inbound' ? 'primary' : 'secondary' }}" 
+                                                size="xs"
                                             >
                                                 {{ $message->direction === 'inbound' ? 'Eingehend' : 'Ausgehend' }}
                                             </x-ui-badge>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
 
-                            {{-- Message-Body --}}
-                            <div class="flex-grow-1 overflow-y-auto p-6">
-                                <div class="prose prose-sm max-w-none text-sm leading-relaxed">
-                                    {!! $message->html_body ?: nl2br(e($message->text_body)) !!}
-                                </div>
-                            </div>
-
-                            {{-- Reply-Bereich --}}
-                            <div class="border-top-1 border-top-solid border-top-muted p-4 flex-shrink-0">
-                                <div class="d-flex flex-col gap-3">
-                                    <label class="text-sm font-medium text-muted-foreground">Antwort</label>
-                                    <textarea 
-                                        rows="4" 
-                                        wire:model.defer="replyBody" 
-                                        class="form-control w-full p-3 border border-muted rounded-lg resize-none focus:border-primary focus:ring-1 focus:ring-primary"
-                                        placeholder="Ihre Antwort..."
-                                    ></textarea>
-                                    <div class="d-flex justify-end">
-                                        <x-ui-button variant="primary" wire:click="sendReply" wire:key="btn-send-reply">
-                                            <div class="d-flex items-center gap-2">
-                                                @svg('heroicon-o-paper-airplane', 'w-4 h-4')
-                                                <span>Antwort senden</span>
-                                            </div>
-                                        </x-ui-button>
+                                    <div class="prose prose-sm max-w-none text-sm leading-relaxed">
+                                        {!! $message->html_body ?: nl2br(e($message->text_body)) !!}
                                     </div>
+                                </div>
+                            @empty
+                                <div class="text-center text-muted">Keine Nachrichten im Thread.</div>
+                            @endforelse
+                        </div>
+
+                        {{-- Reply-Bereich --}}
+                        <div class="border-top-1 border-top-solid border-top-muted p-4 flex-shrink-0">
+                            <div class="d-flex flex-col gap-3">
+                                <label class="text-sm font-medium text-muted-foreground">Antwort</label>
+                                <textarea 
+                                    rows="4" 
+                                    wire:model.defer="replyBody" 
+                                    class="form-control w-full p-3 border border-muted rounded-lg resize-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                    placeholder="Ihre Antwort..."
+                                ></textarea>
+                                <div class="d-flex justify-end">
+                                    <x-ui-button variant="primary" wire:click="sendReply" wire:key="btn-send-reply">
+                                        <div class="d-flex items-center gap-2">
+                                            @svg('heroicon-o-paper-airplane', 'w-4 h-4')
+                                            <span>Antwort senden</span>
+                                        </div>
+                                    </x-ui-button>
                                 </div>
                             </div>
                         </div>
-                    @endif
+                    </div>
                 @else
                     {{-- Platzhalter --}}
                     <div class="flex-grow-1 d-flex items-center justify-center">

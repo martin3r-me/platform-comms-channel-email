@@ -84,6 +84,15 @@ class Index extends Component
         $this->account_id = $account_id;
         $this->context = $context;
         $this->account = CommsChannelEmailAccount::with('threads')->findOrFail($this->account_id);
+
+        // Auto-Select: jüngster Thread beim Laden auswählen, damit rechts der Verlauf sichtbar ist
+        $firstThread = $this->account->threads()->latest()->first();
+        if ($firstThread) {
+            // Direkt setzen, um Signatur-Probleme mit optionalen Parametern zu vermeiden
+            $this->activeThread = CommsChannelEmailThread::find($firstThread->id);
+            $this->composeMode = false;
+            $this->replyBody = '';
+        }
     }
 
     public function startNewMessage(): void
