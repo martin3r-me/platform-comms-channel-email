@@ -15,7 +15,7 @@ return new class extends Migration
             $table->unsignedBigInteger('team_id')->index();
 
             // Wer hat das Konto erstellt
-            $table->unsignedBigInteger('created_by_user_id')->index();
+            
 
             // Optional: individueller Benutzer (für private Konten)
             $table->unsignedBigInteger('user_id')->nullable()->index();
@@ -48,10 +48,6 @@ return new class extends Migration
 
         if (Schema::hasTable('users')) {
             Schema::table('comms_channel_email_accounts', function (Blueprint $table) {
-                $table->foreign('created_by_user_id')
-                      ->references('id')->on('users')
-                      ->cascadeOnDelete();
-                
                 $table->foreign('user_id')
                       ->references('id')->on('users')
                       ->nullOnDelete();
