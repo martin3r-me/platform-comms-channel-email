@@ -20,8 +20,7 @@ return new class extends Migration
             // Optional: individueller Benutzer (für private Konten)
             $table->unsignedBigInteger('user_id')->nullable()->index();
 
-            // Ownership Type: 'team' oder 'user'
-            $table->enum('ownership_type', ['team', 'user'])->default('team');
+            
 
             $table->string('address')->unique();
             $table->string('name')->nullable();
@@ -33,8 +32,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            // Unique constraint: Entweder team_id ODER user_id muss gesetzt sein
-            $table->unique(['team_id', 'user_id'], 'comms_email_ownership_unique');
+            
         });
 
         // FK-Constraints nur hinzufügen, wenn Tabellen existieren
