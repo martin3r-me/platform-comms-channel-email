@@ -1,4 +1,4 @@
-<div class="h-full d-flex flex-col">
+<div class="h-full d-flex flex-col" x-data="{ activeTab: '{{ $activeTab ?? 'messages' }}' }">
     {{-- Channel-Navigation mit Tabs --}}
     <div class="border-bottom-1 border-bottom-solid border-bottom-muted bg-muted-5 flex-shrink-0">
         <div class="d-flex items-center justify-between px-4 py-3">
@@ -22,9 +22,9 @@
                 {{-- Tab-Navigation --}}
                 <div class="d-flex bg-white rounded-lg p-1 border border-muted">
                     <button 
-                        wire:click="$set('activeTab', 'messages')"
+                        @click="activeTab = 'messages'; $wire.set('activeTab', 'messages')"
                         class="px-4 py-2 rounded-md text-sm font-medium transition"
-                        :class="'{{ $activeTab ?? 'messages' }}' === 'messages' 
+                        :class="activeTab === 'messages' 
                             ? 'bg-primary text-on-primary shadow-sm' 
                             : 'text-muted hover:text-secondary'"
                     >
@@ -34,9 +34,9 @@
                         </div>
                     </button>
                     <button 
-                        wire:click="$set('activeTab', 'settings')"
+                        @click="activeTab = 'settings'; $wire.set('activeTab', 'settings')"
                         class="px-4 py-2 rounded-md text-sm font-medium transition"
-                        :class="'{{ $activeTab ?? 'messages' }}' === 'settings' 
+                        :class="activeTab === 'settings' 
                             ? 'bg-primary text-on-primary shadow-sm' 
                             : 'text-muted hover:text-secondary'"
                     >
@@ -101,7 +101,7 @@
     @endif
 
     {{-- Tab-Inhalte --}}
-    @if(($activeTab ?? 'messages') === 'messages')
+    <div x-show="activeTab === 'messages'" x-cloak>
         {{-- Nachrichten-Tab --}}
         <div class="flex-grow-1 d-flex gap-0 overflow-hidden">
             {{-- Linke Spalte: Thread-Liste --}}
@@ -600,6 +600,16 @@
                      <x-ui-button variant="muted" wire:click="$set('showUserModal', false)">Schließen</x-ui-button>
                  </div>
              </x-slot>
-         </x-ui-modal>
-     @endif
+        </x-ui-modal>
+    @endif
+    </div>
+
+    {{-- Settings-Tab --}}
+    <div x-show="activeTab === 'settings'" x-cloak>
+        <div class="p-8 text-center">
+            <div class="text-muted text-sm italic">
+                Einstellungen-Tab wird implementiert...
+            </div>
+        </div>
+    </div>
 </div>
