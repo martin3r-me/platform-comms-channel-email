@@ -272,8 +272,9 @@ class Index extends Component
         }
 
         $messages = $thread->timeline()
-            ->sortBy('occurred_at')
-            ->takeLast($limit);
+            ->sortByDesc('occurred_at')
+            ->take($limit)
+            ->sortBy('occurred_at');
 
         if ($messages->isEmpty()) {
             return ['html' => '', 'text' => ''];
