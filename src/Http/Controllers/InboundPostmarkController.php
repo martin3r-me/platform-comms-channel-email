@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Platform\Comms\ChannelEmail\Models\{
     CommsChannelEmailThread as Thread,
     CommsChannelEmailInboundMail as InboundMail,
@@ -67,6 +68,8 @@ class InboundPostmarkController extends Controller
             if ($thread->wasRecentlyCreated
                 && class_exists(\Platform\Helpdesk\Models\HelpdeskBoard::class)
                 && class_exists(\Platform\Helpdesk\Models\HelpdeskTicket::class)
+                && Schema::hasColumn('helpdesk_boards', 'comms_channel_id')
+                && Schema::hasColumn('helpdesk_tickets', 'comms_channel_id')
                 && $thread->contexts()->count() === 0
             ) {
                 $board = \Platform\Helpdesk\Models\HelpdeskBoard::where('comms_channel_id', $channelId)->first();
