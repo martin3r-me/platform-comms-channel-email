@@ -50,7 +50,17 @@ class Index extends Component
     #[Computed]
     public function threads()
     {
-        return $this->account->threads()->latest()->get();
+        // Nur Threads im aktuellen Kontext laden, wenn Kontext gesetzt ist
+        $query = $this->account->threads()->latest();
+
+        if (!empty($this->context['model']) && !empty($this->context['modelId'])) {
+            $query->whereHas('contexts', function ($q) {
+                $q->where('context_type', $this->context['model'])
+                  ->where('context_id', $this->context['modelId']);
+            });
+        }
+
+        return $query->get();
     }
 
     #[Computed]
@@ -148,6 +158,9 @@ class Index extends Component
 
         $bodyText = trim($this->compose['body']);
         $htmlBody = nl2br(e($bodyText));
+        $history = $this->buildHistorySnippet(null); // keine Historie für neuen Thread
+        $htmlBody .= $history['html'];
+        $bodyText .= $history['text'];
 
         // Kontext anhängen, falls sichtbar
         if ($this->showContextDetails && !empty($this->context)) {
@@ -182,6 +195,10 @@ class Index extends Component
 
         $htmlBody = nl2br(e($this->replyBody));
         $textBody = trim($this->replyBody);
+
+        $history = $this->buildHistorySnippet($this->activeThread, 5);
+        $htmlBody .= $history['html'];
+        $textBody .= $history['text'];
 
         app(EmailChannelPostmarkService::class)->send(
             account: $this->account,
@@ -243,6 +260,39 @@ class Index extends Component
         $html .= '</div>';
 
         return new HtmlString($html);
+    }
+
+    /**
+     * Baut einen History-Snippet (letzte N Nachrichten) für den Mailbody.
+     */
+    protected function buildHistorySnippet(?CommsChannelEmailThread $thread, int $limit = 3): array
+    {
+        if (!$thread) {
+            return ['html' => '', 'text' => ''];
+        }
+
+        $messages = $thread->timeline()
+            ->sortBy('occurred_at')
+            ->takeLast($limit);
+
+        if ($messages->isEmpty()) {
+            return ['html' => '', 'text' => ''];
+        }
+
+        $html = '<hr><div style="font-size:12px;color:#666;"><strong>Verlauf (letzte ' . $messages->count() . '):</strong><ul style="margin:0;padding-left:1em;">';
+        $text = "\n\n---\nVerlauf (letzte {$messages->count()}):\n";
+
+        foreach ($messages as $msg) {
+            $dir = $msg->direction === 'inbound' ? 'Von' : 'An';
+            $when = \Carbon\Carbon::parse($msg->occurred_at)->format('d.m.Y H:i');
+            $subject = $msg->subject ?? '';
+            $html .= '<li><strong>' . e($dir) . ':</strong> ' . e($msg->from ?? $msg->to ?? '') . ' — ' . e($when) . ' — ' . e($subject) . '</li>';
+            $text .= "{$dir}: " . ($msg->from ?? $msg->to ?? '') . " — {$when} — {$subject}\n";
+        }
+
+        $html .= '</ul></div>';
+
+        return ['html' => $html, 'text' => $text];
     }
 
     // Settings-Methoden
