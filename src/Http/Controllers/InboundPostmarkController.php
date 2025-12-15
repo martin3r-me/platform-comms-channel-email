@@ -19,122 +19,142 @@ class InboundPostmarkController extends Controller
     {
         $payload = $request->json()->all();
 
-        // ------------------------------------------------------------
-        // 1) E-Mail-Account validieren
-        // ------------------------------------------------------------
-        $emailAccount = $this->findEmailAccount($payload);
-        
-        if (!$emailAccount) {
-            Log::warning('Rejected email for unknown account', [
-                'to' => $payload['To'] ?? 'unknown',
-                'from' => $payload['From'] ?? 'unknown',
-                'subject' => $payload['Subject'] ?? 'unknown'
-            ]);
-            return response()->noContent(); // 204 → Postmark happy, aber ignoriert
-        }
+        try {
+            // ------------------------------------------------------------
+            // 0) Duplicate-Schutz über Postmark MessageID
+            // ------------------------------------------------------------
+            $postmarkId = $payload['MessageID'] ?? null;
+            if ($postmarkId && InboundMail::where('postmark_id', $postmarkId)->exists()) {
+                return response()->noContent();
+            }
 
-        // ------------------------------------------------------------
-        // 2) Token aus Header oder Body extrahieren
-        // ------------------------------------------------------------
-        $token = $request->header('X-Conversation-Token');
-        if (! $token && isset($payload['TextBody'])) {
-            preg_match('/\[conv:([A-Z0-9]{26})]/', $payload['TextBody'], $m);
-            $token = $m[1] ?? null;
-        }
-
-        // ------------------------------------------------------------
-        // 3) Thread holen oder neu anlegen
-        // ------------------------------------------------------------
-        $thread = $emailAccount->threads()->firstOrCreate(
-            ['token' => $token ?: str()->ulid()->toBase32()],
-            ['subject' => $payload['Subject'] ?? null]
-        );
-
-        // ------------------------------------------------------------
-        // 3b) Falls ein neuer Thread und ein Helpdesk-Board an diesem Channel hängt:
-        //     Ticket erstellen und Thread-Kontext setzen.
-        // ------------------------------------------------------------
-        $channelId = 'email:' . $emailAccount->id;
-        if ($thread->wasRecentlyCreated
-            && class_exists(\Platform\Helpdesk\Models\HelpdeskBoard::class)
-            && class_exists(\Platform\Helpdesk\Models\HelpdeskTicket::class)
-            && $thread->contexts()->count() === 0
-        ) {
-            $board = \Platform\Helpdesk\Models\HelpdeskBoard::where('comms_channel_id', $channelId)->first();
-            if ($board) {
-                $title = $payload['Subject'] ?? 'Ohne Betreff';
-                $textBody = $payload['TextBody'] ?? ($payload['HtmlBody'] ?? '');
-
-                $ticket = \Platform\Helpdesk\Models\HelpdeskTicket::create([
-                    'title'             => $title,
-                    'description'       => $textBody,
-                    'helpdesk_board_id' => $board->id,
-                    'team_id'           => $board->team_id,
-                    'user_id'           => $board->user_id, // Besitzer als Ersteller, falls gesetzt
-                    'status'            => 'open',
-                    'priority'          => null,
+            // ------------------------------------------------------------
+            // 1) E-Mail-Account validieren
+            // ------------------------------------------------------------
+            $emailAccount = $this->findEmailAccount($payload);
+            
+            if (!$emailAccount) {
+                Log::warning('Rejected email for unknown account', [
+                    'to' => $payload['To'] ?? 'unknown',
+                    'from' => $payload['From'] ?? 'unknown',
+                    'subject' => $payload['Subject'] ?? 'unknown'
                 ]);
+                return response()->noContent(); // 204 → Postmark happy, aber ignoriert
+            }
 
-                $thread->contexts()->create([
-                    'context_type' => get_class($ticket),
-                    'context_id'   => $ticket->id,
+            // ------------------------------------------------------------
+            // 2) Token aus Header oder Body extrahieren
+            // ------------------------------------------------------------
+            $token = $request->header('X-Conversation-Token');
+            if (! $token && isset($payload['TextBody'])) {
+                preg_match('/\[conv:([A-Z0-9]{26})]/', $payload['TextBody'], $m);
+                $token = $m[1] ?? null;
+            }
+
+            // ------------------------------------------------------------
+            // 3) Thread holen oder neu anlegen
+            // ------------------------------------------------------------
+            $thread = $emailAccount->threads()->firstOrCreate(
+                ['token' => $token ?: str()->ulid()->toBase32()],
+                ['subject' => $payload['Subject'] ?? null]
+            );
+
+            // ------------------------------------------------------------
+            // 3b) Falls ein neuer Thread und ein Helpdesk-Board an diesem Channel hängt:
+            //     Ticket erstellen und Thread-Kontext setzen.
+            // ------------------------------------------------------------
+            $channelId = 'email:' . $emailAccount->id;
+            if ($thread->wasRecentlyCreated
+                && class_exists(\Platform\Helpdesk\Models\HelpdeskBoard::class)
+                && class_exists(\Platform\Helpdesk\Models\HelpdeskTicket::class)
+                && $thread->contexts()->count() === 0
+            ) {
+                $board = \Platform\Helpdesk\Models\HelpdeskBoard::where('comms_channel_id', $channelId)->first();
+                if ($board) {
+                    $title = $payload['Subject'] ?? 'Ohne Betreff';
+                    $textBody = $payload['TextBody'] ?? ($payload['HtmlBody'] ?? '');
+
+                    $ticket = \Platform\Helpdesk\Models\HelpdeskTicket::create([
+                        'title'             => $title,
+                        'description'       => $textBody,
+                        'helpdesk_board_id' => $board->id,
+                        'team_id'           => $board->team_id,
+                        'user_id'           => $board->user_id, // Besitzer als Ersteller, falls gesetzt
+                        'status'            => 'open',
+                        'priority'          => null,
+                    ]);
+
+                    $thread->contexts()->create([
+                        'context_type' => get_class($ticket),
+                        'context_id'   => $ticket->id,
+                    ]);
+                }
+            }
+
+            // ------------------------------------------------------------
+            // 4) Hilfsfunktion für Adressfelder
+            // ------------------------------------------------------------
+            $addr = static function ($raw) {
+                return match (true) {
+                    is_null($raw)   => null,
+                    is_string($raw) => $raw,
+                    default         => collect($raw)->pluck('Email')->implode(','),
+                };
+            };
+
+            // ------------------------------------------------------------
+            // 5) Mail speichern
+            // ------------------------------------------------------------
+            $mail = $thread->inboundMails()->create([
+                'postmark_id'  => $postmarkId,
+                'from'        => $payload['From'],
+                'to'          => $addr($payload['ToFull'] ?? $payload['To']),
+                'cc'          => $addr($payload['CcFull'] ?? null),
+                'reply_to'    => $addr($payload['ReplyTo'] ?? null),
+                'subject'     => $payload['Subject'],
+                'html_body'   => $payload['HtmlBody'] ?? null,
+                'text_body'   => $payload['TextBody'] ?? null,
+                'headers'     => $payload['Headers'] ?? null,
+                'attachments' => $payload['Attachments'] ?? null,
+                'spam_score'  => $payload['SpamScore'] ?? null,
+                'received_at' => now(),
+            ]);
+
+            // ------------------------------------------------------------
+            // 6) Attachments persistieren
+            // ------------------------------------------------------------
+            foreach ($payload['Attachments'] ?? [] as $a) {
+                $path = "threads/{$thread->id}/{$a['Name']}";
+                Storage::disk('emails')->put($path, base64_decode($a['Content']));
+
+                $mail->attachments()->create([
+                    'filename' => $a['Name'],
+                    'mime'     => $a['ContentType'],
+                    'size'     => $a['ContentLength'],
+                    'disk'     => 'emails',
+                    'path'     => $path,
+                    'cid'      => $a['ContentID'] ?? null,
+                    'inline'   => isset($a['ContentID']),
                 ]);
             }
-        }
 
-        // ------------------------------------------------------------
-        // 4) Hilfsfunktion für Adressfelder
-        // ------------------------------------------------------------
-        $addr = static function ($raw) {
-            return match (true) {
-                is_null($raw)   => null,
-                is_string($raw) => $raw,
-                default         => collect($raw)->pluck('Email')->implode(','),
-            };
-        };
-
-        // ------------------------------------------------------------
-        // 5) Mail speichern
-        // ------------------------------------------------------------
-        $mail = $thread->inboundMails()->create([
-            'from'        => $payload['From'],
-            'to'          => $addr($payload['ToFull'] ?? $payload['To']),
-            'cc'          => $addr($payload['CcFull'] ?? null),
-            'reply_to'    => $addr($payload['ReplyTo'] ?? null),
-            'subject'     => $payload['Subject'],
-            'html_body'   => $payload['HtmlBody'] ?? null,
-            'text_body'   => $payload['TextBody'] ?? null,
-            'headers'     => $payload['Headers'] ?? null,
-            'attachments' => $payload['Attachments'] ?? null,
-            'spam_score'  => $payload['SpamScore'] ?? null,
-            'received_at' => now(),
-        ]);
-
-        // ------------------------------------------------------------
-        // 6) Attachments persistieren
-        // ------------------------------------------------------------
-        foreach ($payload['Attachments'] ?? [] as $a) {
-            $path = "threads/{$thread->id}/{$a['Name']}";
-            Storage::disk('emails')->put($path, base64_decode($a['Content']));
-
-            $mail->attachments()->create([
-                'filename' => $a['Name'],
-                'mime'     => $a['ContentType'],
-                'size'     => $a['ContentLength'],
-                'disk'     => 'emails',
-                'path'     => $path,
-                'cid'      => $a['ContentID'] ?? null,
-                'inline'   => isset($a['ContentID']),
+            Log::info('Email processed successfully', [
+                'account' => $emailAccount->address,
+                'thread_id' => $thread->id,
+                'mail_id' => $mail->id
             ]);
+
+            return response()->noContent(); // 204 → Postmark happy
+        } catch (\Throwable $e) {
+            Log::error('Inbound email processing failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'payload' => $payload,
+            ]);
+
+            // 204 zurückgeben, um Postmark-Retries und Duplikate zu vermeiden
+            return response()->noContent();
         }
-
-        Log::info('Email processed successfully', [
-            'account' => $emailAccount->address,
-            'thread_id' => $thread->id,
-            'mail_id' => $mail->id
-        ]);
-
-        return response()->noContent(); // 204 → Postmark happy
     }
 
     /**
