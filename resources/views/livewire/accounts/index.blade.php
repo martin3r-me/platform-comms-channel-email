@@ -325,10 +325,12 @@
                 @endif
             </div>
         </div>
+        </div> {{-- Ende Nachrichten-Tab --}}
+    </div>
 
-         @else
-         {{-- Settings-Tab --}}
-         <div class="flex-grow-1 overflow-y-auto">
+    {{-- Settings-Tab --}}
+    <div x-show="activeTab === 'settings'" x-cloak>
+        <div class="flex-grow-1 overflow-y-auto">
              <div class="d-flex h-full">
                  {{-- Linke Spalte: Einstellungen --}}
                  <div class="flex-grow-1 overflow-y-auto p-6">
@@ -602,14 +604,5 @@
              </x-slot>
         </x-ui-modal>
     @endif
-    </div>
-
-    {{-- Settings-Tab --}}
-    <div x-show="activeTab === 'settings'" x-cloak>
-        <div class="p-8 text-center">
-            <div class="text-muted text-sm italic">
-                Einstellungen-Tab wird implementiert...
-            </div>
-        </div>
     </div>
 </div>
