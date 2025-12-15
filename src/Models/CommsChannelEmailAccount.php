@@ -18,8 +18,9 @@ class CommsChannelEmailAccount extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'email',
+        'address',
         'name',
+        'inbound_token',
         'team_id',
         'created_by_user_id',
         'user_id',

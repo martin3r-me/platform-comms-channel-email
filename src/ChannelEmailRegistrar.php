@@ -16,7 +16,7 @@ class ChannelEmailRegistrar
                 ChannelRegistry::register([
                     'id'        => 'email:' . $account->id,   // eindeutig, lesbar
                     'type'      => 'email',
-                    'label'     => $account->label ?? $account->address,
+                    'label'     => $account->name ?? $account->address,
                     'component' => \Platform\Comms\ChannelEmail\Http\Livewire\Accounts\Index::class,
                     'group'     => 'E-Mail',
                     'team_id'   => $account->team_id,

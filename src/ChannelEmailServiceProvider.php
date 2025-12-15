@@ -6,6 +6,8 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 use Platform\Comms\ChannelEmail\Models\CommsChannelEmailAccount;
 use Platform\Comms\Registry\ChannelRegistry;
+use Platform\Comms\Registry\ChannelProviderRegistry;
+use Platform\Comms\ChannelEmail\Services\EmailChannelProvider;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -18,6 +20,8 @@ class ChannelEmailServiceProvider extends ServiceProvider
          \Platform\Comms\Registry\ChannelRegistry::addRegistrar(
             \Platform\Comms\ChannelEmail\ChannelEmailRegistrar::class
         );
+
+        ChannelProviderRegistry::addProvider('email', EmailChannelProvider::class);
 
         // --------------------------------------------------
         // Konfigurationsdatei publishen & mergen

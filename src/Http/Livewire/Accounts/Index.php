@@ -164,6 +164,7 @@ class Index extends Component
                 'sender' => auth()->user(),
                 'token' => Str::ulid()->toBase32(),
                 'meta'  => $this->context['meta'] ?? [],
+                'context' => $this->context ?? null,
             ]
         );
 
@@ -192,6 +193,7 @@ class Index extends Component
                 'sender' => auth()->user(),
                 'token' => $this->activeThread->token,
                 'is_reply' => true,
+                'context' => $this->context ?? null,
             ]
         );
 

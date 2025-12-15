@@ -53,6 +53,16 @@ class EmailChannelPostmarkService
         );
 
         // ---------------------------------------------------------
+        // 1b) Kontext an Thread hängen (z. B. Helpdesk-Ticket)
+        // ---------------------------------------------------------
+        if (!empty($opt['context']['model']) && !empty($opt['context']['modelId'])) {
+            $thread->contexts()->firstOrCreate([
+                'context_type' => $opt['context']['model'],
+                'context_id'   => $opt['context']['modelId'],
+            ]);
+        }
+
+        // ---------------------------------------------------------
         // 2) Re: Prefix (nur bei Antworten)
         // ---------------------------------------------------------
         if (($opt['is_reply'] ?? false) && !preg_match('/^Re:/i', $subject)) {

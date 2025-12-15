@@ -51,6 +51,38 @@ class InboundPostmarkController extends Controller
         );
 
         // ------------------------------------------------------------
+        // 3b) Falls ein neuer Thread und ein Helpdesk-Board an diesem Channel hängt:
+        //     Ticket erstellen und Thread-Kontext setzen.
+        // ------------------------------------------------------------
+        $channelId = 'email:' . $emailAccount->id;
+        if ($thread->wasRecentlyCreated
+            && class_exists(\Platform\Helpdesk\Models\HelpdeskBoard::class)
+            && class_exists(\Platform\Helpdesk\Models\HelpdeskTicket::class)
+            && $thread->contexts()->count() === 0
+        ) {
+            $board = \Platform\Helpdesk\Models\HelpdeskBoard::where('comms_channel_id', $channelId)->first();
+            if ($board) {
+                $title = $payload['Subject'] ?? 'Ohne Betreff';
+                $textBody = $payload['TextBody'] ?? ($payload['HtmlBody'] ?? '');
+
+                $ticket = \Platform\Helpdesk\Models\HelpdeskTicket::create([
+                    'title'             => $title,
+                    'description'       => $textBody,
+                    'helpdesk_board_id' => $board->id,
+                    'team_id'           => $board->team_id,
+                    'user_id'           => $board->user_id, // Besitzer als Ersteller, falls gesetzt
+                    'status'            => 'open',
+                    'priority'          => null,
+                ]);
+
+                $thread->contexts()->create([
+                    'context_type' => get_class($ticket),
+                    'context_id'   => $ticket->id,
+                ]);
+            }
+        }
+
+        // ------------------------------------------------------------
         // 4) Hilfsfunktion für Adressfelder
         // ------------------------------------------------------------
         $addr = static function ($raw) {
