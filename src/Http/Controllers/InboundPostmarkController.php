@@ -61,12 +61,12 @@ class InboundPostmarkController extends Controller
             );
 
             // ------------------------------------------------------------
-            // 3b) Falls ein neuer Thread und ein Helpdesk-Board an diesem Channel hängt:
+            // 3b) Falls Thread noch keinen Kontext hat und Channel an ein Helpdesk-Board hängt:
             //     Ticket erstellen und Thread-Kontext setzen.
+            //     (ohne wasRecentlyCreated, damit auch nachträglich gemappt wird)
             // ------------------------------------------------------------
             $channelId = 'email:' . $emailAccount->id;
-            if ($thread->wasRecentlyCreated
-                && class_exists(\Platform\Helpdesk\Models\HelpdeskBoard::class)
+            if (class_exists(\Platform\Helpdesk\Models\HelpdeskBoard::class)
                 && class_exists(\Platform\Helpdesk\Models\HelpdeskTicket::class)
                 && Schema::hasColumn('helpdesk_boards', 'comms_channel_id')
                 && Schema::hasColumn('helpdesk_tickets', 'comms_channel_id')
@@ -83,6 +83,7 @@ class InboundPostmarkController extends Controller
                         'helpdesk_board_id' => $board->id,
                         'team_id'           => $board->team_id,
                         'user_id'           => $board->user_id, // Besitzer als Ersteller, falls gesetzt
+                        'comms_channel_id'  => $channelId,
                         'status'            => 'open',
                         'priority'          => null,
                     ]);

@@ -2,64 +2,21 @@
     {{-- Channel-Navigation mit Tabs --}}
     <div class="border-bottom-1 border-bottom-solid border-bottom-muted bg-muted-5 flex-shrink-0">
         <div class="d-flex items-center justify-between px-4 py-3">
-            <div class="d-flex items-center gap-4">
-                @if (($activeTab ?? 'messages') === 'messages')
-                    <x-ui-button
-                        variant="primary"
-                        size="sm"
-                        wire:click="startNewMessage"
-                        wire:key="btn-start-new"
-                        iconOnly
-                    >
-                        @svg('heroicon-o-plus', 'w-4 h-4')
-                    </x-ui-button>
-                @endif
-
+            <div class="d-flex items-center gap-3">
                 <div class="text-lg font-semibold text-secondary">
-                    {{ $account->label ?? $account->email }}
+                    {{ $account->label ?? $account->address ?? $account->email }}
                 </div>
-                
-                {{-- Tab-Navigation --}}
-                <div class="d-flex bg-white rounded-lg p-1 border border-muted">
-                    <button 
-                        @click="activeTab = 'messages'; $wire.set('activeTab', 'messages')"
-                        class="px-4 py-2 rounded-md text-sm font-medium transition"
-                        :class="activeTab === 'messages' 
-                            ? 'bg-primary text-on-primary shadow-sm' 
-                            : 'text-muted hover:text-secondary'"
-                    >
-                        <div class="d-flex items-center gap-2">
-                            @svg('heroicon-o-envelope', 'w-4 h-4')
-                            <span>Nachrichten</span>
-                        </div>
-                    </button>
-                    <button 
-                        @click="activeTab = 'settings'; $wire.set('activeTab', 'settings')"
-                        class="px-4 py-2 rounded-md text-sm font-medium transition"
-                        :class="activeTab === 'settings' 
-                            ? 'bg-primary text-on-primary shadow-sm' 
-                            : 'text-muted hover:text-secondary'"
-                    >
-                        <div class="d-flex items-center gap-2">
-                            @svg('heroicon-o-cog-6-tooth', 'w-4 h-4')
-                            <span>Einstellungen</span>
-                        </div>
-                    </button>
-
-                </div>
-            </div>
-
-            <div class="d-flex items-center gap-2">
                 @if (!empty($context))
-                    <x-ui-button 
-                        :variant="$showContextDetails ? 'info' : 'info-outline'"
-                        size="sm"
-                        wire:click="$toggle('showContextDetails')"
-                        wire:key="btn-toggle-context"
-                    >
-                        {{ $showContextDetails ? 'Kontext ausblenden' : 'Kontext einblenden' }}
-                    </x-ui-button>
+                    <x-ui-badge variant="info" size="sm">{{ class_basename($context['model'] ?? '') }} #{{ $context['modelId'] ?? '' }}</x-ui-badge>
                 @endif
+            </div>
+            <div class="d-flex items-center gap-2">
+                <x-ui-button variant="primary" size="sm" wire:click="startNewMessage" wire:key="btn-start-new">
+                    <div class="d-flex items-center gap-2">
+                        @svg('heroicon-o-plus', 'w-4 h-4')
+                        <span>Neue Nachricht</span>
+                    </div>
+                </x-ui-button>
             </div>
         </div>
     </div>
@@ -100,8 +57,8 @@
         </div>
     @endif
 
-    {{-- Tab-Inhalte --}}
-    <div x-show="activeTab === 'messages'" x-cloak>
+    {{-- Tab-Inhalte (nur Nachrichten-Ansicht verbleibt hier) --}}
+    <div>
         {{-- Nachrichten-Tab --}}
         <div class="flex-grow-1 d-flex gap-0 overflow-hidden">
             {{-- Linke Spalte: Thread-Liste --}}
@@ -114,7 +71,7 @@
                             @foreach ($this->threads as $thread)
                                 @php 
                                     $threadKey = "thread-{$thread->id}";
-                                    $latestMessage = $thread->timeline()->first();
+                                    $latestMessage = $thread->timeline()->last();
                                     $isActive = $activeThread && $activeThread->id === $thread->id;
                                 @endphp
 
@@ -160,6 +117,7 @@
                                                     >
                                                         {{ $latestMessage->direction === 'inbound' ? 'Eingehend' : 'Ausgehend' }}
                                                     </x-ui-badge>
+                                                    <span class="text-xs text-muted">· {{ $thread->timeline()->count() }} Nachrichten</span>
                                                 </div>
                                             @endif
                                         </div>
@@ -238,23 +196,30 @@
                         </div>
                     </div>
                 @elseif ($activeThread)
-                    {{-- Conversation-Viewer: kompletter Verlauf --}}
+                    {{-- Conversation-Viewer: kompakt mit Stats --}}
                     <div class="d-flex flex-col flex-grow-1 overflow-hidden bg-white">
+                        @php 
+                            $messages = $activeThread->timeline()->sortBy('occurred_at');
+                            $count = $messages->count();
+                            $first = $messages->first();
+                            $lastMsg = $messages->last();
+                        @endphp
                         {{-- Header: Thread-Infos --}}
                         <div class="border-bottom-1 border-bottom-solid border-bottom-muted p-4 flex-shrink-0">
                             <div class="d-flex justify-between items-start">
-                                <div class="flex-grow-1">
-                                    <h2 class="text-lg font-semibold text-secondary mb-1">
+                                <div class="flex-grow-1 space-y-1">
+                                    <h2 class="text-lg font-semibold text-secondary mb-0">
                                         {{ $activeThread->subject ?? 'Kein Betreff' }}
                                     </h2>
-                                    <div class="text-xs text-muted">Verlauf</div>
+                                    <div class="text-xs text-muted">
+                                        {{ $count }} Nachrichten · Start: {{ $first ? \Carbon\Carbon::parse($first->occurred_at)->format('d.m.Y H:i') : '–' }} · Letzte: {{ $lastMsg ? \Carbon\Carbon::parse($lastMsg->occurred_at)->format('d.m.Y H:i') : '–' }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {{-- Verlauf --}}
                         <div class="flex-grow-1 overflow-y-auto p-6 space-y-6">
-                            @php $messages = $activeThread->timeline()->sortBy('occurred_at'); @endphp
                             @forelse($messages as $message)
                                 <div class="d-flex flex-col gap-2">
                                     <div class="d-flex items-center justify-between">
