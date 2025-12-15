@@ -603,6 +603,5 @@
                  </div>
              </x-slot>
         </x-ui-modal>
-    @endif
     </div>
 </div>
