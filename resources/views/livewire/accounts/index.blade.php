@@ -328,9 +328,9 @@
         </div> {{-- Ende Nachrichten-Tab --}}
     </div>
 
-    {{-- Settings-Tab --}}
+         {{-- Settings-Tab --}}
     <div x-show="activeTab === 'settings'" x-cloak>
-        <div class="flex-grow-1 overflow-y-auto">
+         <div class="flex-grow-1 overflow-y-auto">
              <div class="d-flex h-full">
                  {{-- Linke Spalte: Einstellungen --}}
                  <div class="flex-grow-1 overflow-y-auto p-6">
