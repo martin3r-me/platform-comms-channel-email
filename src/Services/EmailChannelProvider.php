@@ -49,5 +49,23 @@ class EmailChannelProvider implements ChannelProviderInterface
 
         return 'email:' . $account->id;
     }
+
+    public function deleteChannel(string $channelId): void
+    {
+        // Erwartetes Format: email:{id}
+        if (!str_starts_with($channelId, 'email:')) {
+            throw new \InvalidArgumentException('Channel-ID gehört nicht zu diesem Provider.');
+        }
+
+        $id = (int) str_replace('email:', '', $channelId);
+        if ($id <= 0) {
+            throw new \InvalidArgumentException('Ungültige Channel-ID.');
+        }
+
+        $account = CommsChannelEmailAccount::find($id);
+        if ($account) {
+            $account->delete();
+        }
+    }
 }
 
