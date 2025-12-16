@@ -7,6 +7,7 @@ use Livewire\Attributes\Computed;
 
 use Illuminate\Support\Str;
 use Illuminate\Support\HtmlString;
+use Platform\Comms\Services\CommsActivityService;
 use Platform\Comms\ChannelEmail\Models\{
     CommsChannelEmailAccount,
     CommsChannelEmailThread
@@ -116,6 +117,20 @@ class Index extends Component
                 })
                 ->latest()
                 ->first();
+
+            // Wenn wir automatisch einen Thread öffnen, gilt der Kontext/Channel als "gesehen"
+            if ($this->activeThread && class_exists(CommsActivityService::class) && CommsActivityService::enabled()) {
+                $userId = auth()->id();
+                if ($userId) {
+                    CommsActivityService::markSeen(
+                        userId: (int) $userId,
+                        channelId: 'email:' . $this->account_id,
+                        contextType: (string) $this->context['model'],
+                        contextId: (int) $this->context['modelId'],
+                        teamId: auth()->user()?->currentTeam?->id,
+                    );
+                }
+            }
         }
     }
 
@@ -167,6 +182,22 @@ class Index extends Component
         $this->activeMessageDirection = $direction;
         $this->composeMode = false;
         $this->replyBody = '';
+
+        // Unread für diesen Kontext/Channel als gesehen markieren
+        if (!empty($this->context['model']) && !empty($this->context['modelId'])
+            && class_exists(CommsActivityService::class) && CommsActivityService::enabled()
+        ) {
+            $userId = auth()->id();
+            if ($userId) {
+                CommsActivityService::markSeen(
+                    userId: (int) $userId,
+                    channelId: 'email:' . $this->account_id,
+                    contextType: (string) $this->context['model'],
+                    contextId: (int) $this->context['modelId'],
+                    teamId: auth()->user()?->currentTeam?->id,
+                );
+            }
+        }
     }
 
     public function sendNewMessage(): void

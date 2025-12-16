@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Platform\Comms\Services\CommsActivityService;
 use Platform\Comms\ChannelEmail\Models\{
     CommsChannelEmailThread as Thread,
     CommsChannelEmailInboundMail as InboundMail,
@@ -140,6 +141,31 @@ class InboundPostmarkController extends Controller
                 'spam_score'  => $payload['SpamScore'] ?? null,
                 'received_at' => now(),
             ]);
+
+            // ------------------------------------------------------------
+            // 5b) Comms Activity (generic unread/inbox)
+            //     Für jeden Kontext des Threads ein "inbound activity" schreiben.
+            // ------------------------------------------------------------
+            if (class_exists(CommsActivityService::class) && CommsActivityService::enabled()) {
+                $contexts = $thread->contexts()->get();
+                foreach ($contexts as $ctx) {
+                    CommsActivityService::recordInbound(
+                        channelId: $channelId,
+                        contextType: (string) $ctx->context_type,
+                        contextId: (int) $ctx->context_id,
+                        teamId: $emailAccount->team_id ?? null,
+                        threadRef: 'email-thread:' . $thread->id,
+                        summary: (string) ($payload['Subject'] ?? 'Ohne Betreff'),
+                        payload: [
+                            'from' => $payload['From'] ?? null,
+                            'subject' => $payload['Subject'] ?? null,
+                            'thread_id' => $thread->id,
+                            'mail_id' => $mail->id,
+                        ],
+                        occurredAt: $mail->received_at ?? now(),
+                    );
+                }
+            }
 
             // ------------------------------------------------------------
             // 6) Attachments persistieren
