@@ -62,7 +62,7 @@
         {{-- Nachrichten-Tab --}}
         <div class="flex-grow-1 d-flex gap-0 overflow-hidden">
             {{-- Linke Spalte: Thread-Liste --}}
-            <div class="w-96 flex-shrink-0 overflow-y-auto border-right-1 border-right-solid border-right-muted">
+            <div class="w-96 flex-shrink-0 overflow-y-auto border-right-1 border-right-solid border-right-muted {{ ($activeThread || $composeMode) ? 'hidden md:block' : '' }}">
                 <div class="p-4">
                     <h3 class="text-sm text-muted-foreground font-semibold uppercase mb-4">Nachrichten</h3>
                     
@@ -73,51 +73,53 @@
                                     $threadKey = "thread-{$thread->id}";
                                     $latestMessage = $thread->timeline()->last();
                                     $isActive = $activeThread && $activeThread->id === $thread->id;
+                                    $previewSource = $latestMessage?->text_body ?: strip_tags($latestMessage?->html_body ?? '');
+                                    $preview = \Illuminate\Support\Str::limit(trim((string) $previewSource), 120);
                                 @endphp
 
                                 <div 
-                                    class="p-3 rounded-lg cursor-pointer transition-all duration-200 border border-transparent hover:border-primary hover:bg-primary-5"
-                                    :class="'{{ $isActive ? 'bg-primary-10 border-primary' : '' }}'"
+                                    class="p-3 rounded-lg cursor-pointer transition-all duration-200 border {{ $isActive ? 'border-primary bg-primary-5' : 'border-muted hover:border-primary hover:bg-primary-5' }}"
                                     wire:click="selectThread({{ $thread->id }}, {{ $latestMessage?->id }}, '{{ $latestMessage?->direction }}')"
                                     wire:key="{{ $threadKey }}"
                                 >
                                     <div class="d-flex items-start gap-3">
                                         <div class="w-10 h-10 bg-primary rounded-full d-flex items-center justify-center text-on-primary text-sm font-semibold flex-shrink-0">
-                                            @svg('heroicon-o-envelope', 'w-5 h-5')
+                                            @if(($latestMessage?->direction ?? null) === 'inbound')
+                                                @svg('heroicon-o-arrow-down', 'w-5 h-5')
+                                            @elseif(($latestMessage?->direction ?? null) === 'outbound')
+                                                @svg('heroicon-o-arrow-up', 'w-5 h-5')
+                                            @else
+                                                @svg('heroicon-o-envelope', 'w-5 h-5')
+                                            @endif
                                         </div>
                                         
                                         <div class="flex-grow-1 min-w-0">
-                                            {{-- Erste Zeile: Empfänger/Absender --}}
-                                            <div class="font-medium text-secondary truncate">
+                                            <div class="d-flex items-start justify-between gap-3">
+                                                <div class="font-semibold text-secondary truncate">
+                                                    {{ $thread->subject ?: 'Kein Betreff' }}
+                                                </div>
                                                 @if($latestMessage)
-                                                    @if($latestMessage->direction === 'inbound')
-                                                        Von: {{ $latestMessage->from }}
-                                                    @else
-                                                        An: {{ $latestMessage->to }}
-                                                    @endif
-                                                @else
-                                                    Keine Nachrichten
+                                                    <div class="text-xs text-muted whitespace-nowrap">
+                                                        {{ \Carbon\Carbon::parse($latestMessage->occurred_at)->format('d.m. H:i') }}
+                                                    </div>
                                                 @endif
                                             </div>
-                                            
-                                            {{-- Zweite Zeile: Betreff --}}
+
                                             <div class="text-sm text-muted truncate mt-1">
-                                                {{ $thread->subject ?: 'Kein Betreff' }}
+                                                {{ $preview ?: 'Keine Vorschau verfügbar' }}
                                             </div>
-                                            
-                                            {{-- Dritte Zeile: Zeitstempel und Richtung --}}
+
                                             @if($latestMessage)
-                                                <div class="d-flex items-center gap-2 mt-1">
-                                                    <div class="text-xs text-muted">
-                                                        {{ \Carbon\Carbon::parse($latestMessage->occurred_at)->format('d.m.Y H:i') }}
-                                                    </div>
+                                                <div class="d-flex items-center gap-2 mt-2 text-xs text-muted">
                                                     <x-ui-badge 
                                                         variant="{{ $latestMessage->direction === 'inbound' ? 'primary' : 'secondary' }}" 
                                                         size="xs"
                                                     >
                                                         {{ $latestMessage->direction === 'inbound' ? 'Eingehend' : 'Ausgehend' }}
                                                     </x-ui-badge>
-                                                    <span class="text-xs text-muted">· {{ $thread->timeline()->count() }} Nachrichten</span>
+                                                    <span class="truncate">
+                                                        {{ $latestMessage->direction === 'inbound' ? ('Von: ' . ($latestMessage->from ?? '')) : ('An: ' . ($latestMessage->to ?? '')) }}
+                                                    </span>
                                                 </div>
                                             @endif
                                         </div>
@@ -142,7 +144,10 @@
                 @if ($composeMode)
                     {{-- Compose-Modus --}}
                     <div class="p-6 overflow-y-auto" wire:key="composer-new-message">
-                        <h3 class="text-lg font-semibold mb-4">Neue Nachricht</h3>
+                        <div class="d-flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold m-0">Neue Nachricht</h3>
+                            <x-ui-button size="sm" variant="secondary-outline" wire:click="backToThreadList">Zurück</x-ui-button>
+                        </div>
                         <div class="d-flex flex-col gap-4">
                             <div>
                                 <x-ui-input-text
@@ -206,7 +211,7 @@
                         @endphp
                         {{-- Header: Thread-Infos --}}
                         <div class="border-bottom-1 border-bottom-solid border-bottom-muted p-4 flex-shrink-0">
-                            <div class="d-flex justify-between items-start">
+                            <div class="d-flex justify-between items-start gap-3">
                                 <div class="flex-grow-1 space-y-1">
                                     <h2 class="text-lg font-semibold text-secondary mb-0">
                                         {{ $activeThread->subject ?? 'Kein Betreff' }}
@@ -214,6 +219,9 @@
                                     <div class="text-xs text-muted">
                                         {{ $count }} Nachrichten · Start: {{ $first ? \Carbon\Carbon::parse($first->occurred_at)->format('d.m.Y H:i') : '–' }} · Letzte: {{ $lastMsg ? \Carbon\Carbon::parse($lastMsg->occurred_at)->format('d.m.Y H:i') : '–' }}
                                     </div>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <x-ui-button size="sm" variant="secondary-outline" wire:click="backToThreadList">Zurück</x-ui-button>
                                 </div>
                             </div>
                         </div>
