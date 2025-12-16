@@ -197,10 +197,11 @@
                     </div>
                 @elseif ($activeThread)
                     @php
-                        $messages = $activeThread->timeline()->sortBy('occurred_at');
+                        // Neueste Nachrichten oben (Inbox-Style)
+                        $messages = $activeThread->timeline()->sortByDesc('occurred_at');
                         $count = $messages->count();
-                        $first = $messages->first();
-                        $lastMsg = $messages->last();
+                        $newest = $messages->first();
+                        $oldest = $messages->last();
                     @endphp
 
                     <div class="flex items-start justify-between gap-3 px-4 py-3 border-b border-gray-200">
@@ -209,7 +210,7 @@
                                 {{ $activeThread->subject ?? 'Kein Betreff' }}
                             </div>
                             <div class="mt-1 text-xs text-gray-500">
-                                {{ $count }} Nachrichten · Start: {{ $first ? \Carbon\Carbon::parse($first->occurred_at)->format('d.m.Y H:i') : '–' }} · Letzte: {{ $lastMsg ? \Carbon\Carbon::parse($lastMsg->occurred_at)->format('d.m.Y H:i') : '–' }}
+                                {{ $count }} Nachrichten · Start: {{ $oldest ? \Carbon\Carbon::parse($oldest->occurred_at)->format('d.m.Y H:i') : '–' }} · Letzte: {{ $newest ? \Carbon\Carbon::parse($newest->occurred_at)->format('d.m.Y H:i') : '–' }}
                             </div>
                         </div>
                         <button type="button" wire:click="backToThreadList" class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900">
@@ -218,14 +219,17 @@
                         </button>
                     </div>
 
-                    <div class="flex-1 min-h-0 overflow-y-auto bg-gray-50 px-4 py-6 space-y-4">
+                    {{-- Verlauf: neueste oben --}}
+                    <div class="flex-1 min-h-0 overflow-y-auto bg-gray-50 px-4 py-6 space-y-4" wire:key="thread-messages-{{ $activeThread->id }}">
                         @forelse($messages as $message)
                             @php $isInbound = $message->direction === 'inbound'; @endphp
                             <div class="flex {{ $isInbound ? 'justify-start' : 'justify-end' }}">
                                 <div class="w-full max-w-3xl">
-                                    <div class="rounded-2xl border px-4 py-3 {{ $isInbound ? 'bg-white border-gray-200' : 'bg-white border-gray-200' }}">
+                                    <div class="rounded-2xl border px-4 py-3 {{ $isInbound ? 'bg-white border-gray-200' : 'bg-gray-100 border-gray-200' }}">
                                         <div class="flex items-center justify-between gap-3 text-xs text-gray-500">
                                             <div class="truncate">
+                                                <span class="font-semibold text-gray-700">{{ $isInbound ? 'Gegenseite' : 'Du' }}</span>
+                                                <span class="mx-1 text-gray-300">·</span>
                                                 {{ $isInbound ? ('Von: ' . ($message->from ?? '')) : ('An: ' . ($message->to ?? '')) }}
                                             </div>
                                             <div class="shrink-0 whitespace-nowrap">
@@ -244,9 +248,24 @@
                     </div>
 
                     <div class="border-t border-gray-200 bg-white px-4 py-3">
-                        <div class="flex items-end gap-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 pt-1">
+                                Antwort
+                            </div>
+                            {{-- Zweiter "Senden"-Button (zusätzlich), damit es immer klar ist --}}
+                            <button
+                                type="button"
+                                wire:click="sendReply"
+                                class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                                title="Antwort senden"
+                            >
+                                @svg('heroicon-o-paper-airplane', 'w-4 h-4')
+                                <span class="hidden sm:inline">Senden</span>
+                            </button>
+                        </div>
+
+                        <div class="mt-2 flex items-end gap-3">
                             <div class="flex-1">
-                                <label class="block text-xs font-semibold uppercase tracking-wide text-gray-500">Antwort</label>
                                 <textarea
                                     rows="3"
                                     wire:model.defer="replyBody"
