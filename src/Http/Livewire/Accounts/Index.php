@@ -96,10 +96,27 @@ class Index extends Component
         $this->context = $context;
         $this->ui_mode = $ui_mode ?: 'comms';
         $this->account = CommsChannelEmailAccount::with('threads')->findOrFail($this->account_id);
-        // MVP-UX: Thread erst nach explizitem Klick anzeigen (kein Auto-Select)
+
+        // UX:
+        // - Im Kontext (Ticket/Task) beim Öffnen direkt den passenden Thread öffnen (neuester zuerst)
+        // - Ohne Kontext NICHT auto-selecten (sonst wird es ein Mail-Client)
         $this->activeThread = null;
         $this->composeMode = false;
         $this->replyBody = '';
+
+        if (
+            $this->ui_mode === 'comms'
+            && !empty($this->context['model'])
+            && !empty($this->context['modelId'])
+        ) {
+            $this->activeThread = $this->account->threads()
+                ->whereHas('contexts', function ($q) {
+                    $q->where('context_type', $this->context['model'])
+                      ->where('context_id', $this->context['modelId']);
+                })
+                ->latest()
+                ->first();
+        }
     }
 
     public function backToThreadList(): void
