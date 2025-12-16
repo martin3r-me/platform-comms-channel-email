@@ -128,17 +128,18 @@ class Index extends Component
     public function startNewMessage(): void
     {
         $this->reset('activeThread', 'replyBody', 'activeMessageId', 'activeMessageDirection');
+        $this->reset('compose');
         $this->composeMode = true;
 
+        // Optional: Empfänger aus Kontext (falls bereits als {email: ...} geliefert)
         $this->compose['to'] = collect($this->context['recipients'] ?? [])
             ->pluck('email')
             ->filter()
             ->implode(', ');
 
-        if ($this->showContextDetails) {
-            $this->compose['subject'] = $this->context['subject'] ?? '';
-            $this->compose['body'] = $this->context['description'] ?? '';
-        }
+        // Für neue Threads ist es hilfreich, Subject/Body aus dem Kontext vorzubelegen
+        $this->compose['subject'] = $this->context['subject'] ?? '';
+        $this->compose['body'] = $this->context['description'] ?? '';
     }
 
     public function updatedShowContextDetails(bool $value): void
@@ -171,10 +172,24 @@ class Index extends Component
     public function sendNewMessage(): void
     {
         $this->validate([
-            'compose.to' => 'required|email',
+            'compose.to' => 'required|string',
             'compose.subject' => 'required|string',
             'compose.body' => 'required|string',
         ]);
+
+        // Mehrere Empfänger erlauben (comma/semicolon separated)
+        $toRaw = (string) ($this->compose['to'] ?? '');
+        $emails = collect(preg_split('/[;,]+/', $toRaw))
+            ->map(fn ($e) => trim((string) $e))
+            ->filter();
+
+        if ($emails->isEmpty() || $emails->contains(fn ($e) => !filter_var($e, FILTER_VALIDATE_EMAIL))) {
+            $this->addError('compose.to', 'Bitte eine oder mehrere gültige E-Mail-Adressen angeben (kommagetrennt).');
+            return;
+        }
+
+        // Normalisiere Empfänger
+        $this->compose['to'] = $emails->implode(', ');
 
         $bodyText = trim($this->compose['body']);
         $htmlBody = nl2br(e($bodyText));
