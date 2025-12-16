@@ -7,7 +7,7 @@
             </div>
             @if (!empty($context))
                 <div class="mt-1 flex items-center gap-2 text-xs text-gray-500">
-                    <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 font-medium text-blue-700">
+                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 font-medium text-gray-700">
                         {{ class_basename($context['model'] ?? '') }} #{{ $context['modelId'] ?? '' }}
                     </span>
                     @if (!empty($context['url']))
@@ -34,7 +34,7 @@
             <button
                 type="button"
                 wire:click="startNewMessage"
-                class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                class="inline-flex items-center gap-2 rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800"
             >
                 @svg('heroicon-o-plus', 'w-4 h-4')
                 <span>Neue Nachricht</span>
@@ -86,8 +86,8 @@
 
                                 <button
                                     type="button"
-                                    class="w-full text-left rounded-lg border px-3 py-3 transition
-                                    {{ $isActive ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50' }}"
+                                    class="w-full text-left rounded-lg border px-3 py-3 transition border-l-4
+                                    {{ $isActive ? 'border-gray-200 bg-gray-50 border-l-gray-900' : 'border-gray-200 hover:bg-gray-50 border-l-transparent' }}"
                                     wire:click="selectThread({{ $thread->id }}, {{ $latestMessage?->id }}, '{{ $latestMessage?->direction }}')"
                                     wire:key="{{ $threadKey }}"
                                 >
@@ -98,7 +98,7 @@
                                                     {{ $thread->subject ?: 'Kein Betreff' }}
                                                 </span>
                                                 @if($dir)
-                                                    <span class="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium {{ $dir === 'inbound' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' }}">
+                                                    <span class="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-gray-100 text-gray-700">
                                                         {{ $dir === 'inbound' ? 'Inbound' : 'Outbound' }}
                                                     </span>
                                                 @endif
@@ -190,7 +190,7 @@
                             <button type="button" wire:click="$set('composeMode', false)" class="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                                 Abbrechen
                             </button>
-                            <button type="button" wire:click="sendNewMessage" class="rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                            <button type="button" wire:click="sendNewMessage" class="rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800">
                                 Senden
                             </button>
                         </div>
@@ -223,8 +223,8 @@
                             @php $isInbound = $message->direction === 'inbound'; @endphp
                             <div class="flex {{ $isInbound ? 'justify-start' : 'justify-end' }}">
                                 <div class="w-full max-w-3xl">
-                                    <div class="rounded-2xl border px-4 py-3 {{ $isInbound ? 'bg-white border-gray-200' : 'bg-blue-600 border-blue-700 text-white' }}">
-                                        <div class="flex items-center justify-between gap-3 text-xs {{ $isInbound ? 'text-gray-500' : 'text-blue-100' }}">
+                                    <div class="rounded-2xl border px-4 py-3 {{ $isInbound ? 'bg-white border-gray-200' : 'bg-white border-gray-200' }}">
+                                        <div class="flex items-center justify-between gap-3 text-xs text-gray-500">
                                             <div class="truncate">
                                                 {{ $isInbound ? ('Von: ' . ($message->from ?? '')) : ('An: ' . ($message->to ?? '')) }}
                                             </div>
@@ -232,7 +232,7 @@
                                                 {{ \Carbon\Carbon::parse($message->occurred_at)->format('d.m.Y H:i') }}
                                             </div>
                                         </div>
-                                        <div class="mt-2 prose prose-sm max-w-none {{ $isInbound ? 'text-gray-900' : 'prose-invert text-white' }}">
+                                        <div class="mt-2 prose prose-sm max-w-none text-gray-900">
                                             {!! $message->html_body ?: nl2br(e($message->text_body)) !!}
                                         </div>
                                     </div>
@@ -254,7 +254,7 @@
                                     placeholder="Kurze Antwort… (Verlauf wird automatisch angehängt)"
                                 ></textarea>
                             </div>
-                            <button type="button" wire:click="sendReply" class="shrink-0 rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+                            <button type="button" wire:click="sendReply" class="shrink-0 rounded-md bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800">
                                 Senden
                             </button>
                         </div>
