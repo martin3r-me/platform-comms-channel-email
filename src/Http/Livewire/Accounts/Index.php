@@ -118,6 +118,28 @@ class Index extends Component
                 ->latest()
                 ->first();
         }
+
+        // Wenn wir via Inbox in einen Kontext springen und auto-open aktiv ist:
+        // dann soll der Counter direkt verschwinden, sobald der Thread sichtbar ist.
+        if (
+            $this->activeThread
+            && !empty($this->context['mark_seen_on_open'])
+            && class_exists(CommsActivityService::class) && CommsActivityService::enabled()
+        ) {
+            $userId = auth()->id();
+            if ($userId) {
+                CommsActivityService::markSeen(
+                    userId: (int) $userId,
+                    channelId: 'email:' . $this->account_id,
+                    contextType: (string) $this->context['model'],
+                    contextId: (int) $this->context['modelId'],
+                    teamId: auth()->user()?->currentTeam?->id,
+                );
+
+                // Navbar/CommsModal sofort aktualisieren
+                $this->dispatch('comms-indicator-refresh');
+            }
+        }
     }
 
     public function backToThreadList(): void
