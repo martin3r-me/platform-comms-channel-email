@@ -182,6 +182,9 @@ class Index extends Component
                     contextId: (int) $this->context['modelId'],
                     teamId: auth()->user()?->currentTeam?->id,
                 );
+
+                // Navbar/CommsModal sofort aktualisieren
+                $this->dispatch('comms-indicator-refresh');
             }
         }
     }
