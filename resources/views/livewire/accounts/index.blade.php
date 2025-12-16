@@ -24,7 +24,7 @@
                 <button
                     type="button"
                     wire:click="$toggle('showContextDetails')"
-                    class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
                 >
                     @svg('heroicon-o-information-circle', 'w-4 h-4')
                     <span class="hidden sm:inline">{{ $showContextDetails ? 'Kontext ausblenden' : 'Kontext' }}</span>
@@ -34,7 +34,7 @@
             <button
                 type="button"
                 wire:click="startNewMessage"
-                class="inline-flex items-center gap-2 rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+                class="inline-flex items-center gap-2 rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
             >
                 @svg('heroicon-o-plus', 'w-4 h-4')
                 <span>Neue Nachricht</span>
@@ -138,7 +138,7 @@
                 @if ($composeMode)
                     <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
                         <div class="text-sm font-semibold text-gray-900">Neue Nachricht</div>
-                        <button type="button" wire:click="backToThreadList" class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900">
+                        <button type="button" wire:click="backToThreadList" class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
                             @svg('heroicon-o-arrow-left', 'w-4 h-4')
                             Zurück
                         </button>
@@ -149,10 +149,10 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Empfänger</label>
                                 <input
-                                    type="email"
+                                    type="text"
                                     wire:model.defer="compose.to"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    placeholder="name@firma.de"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900/20"
+                                    placeholder="name@firma.de, zweite@firma.de"
                                 />
                             </div>
 
@@ -161,7 +161,7 @@
                                 <input
                                     type="text"
                                     wire:model.defer="compose.subject"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900/20"
                                     placeholder="Betreff"
                                 />
                             </div>
@@ -171,7 +171,7 @@
                                 <textarea
                                     rows="12"
                                     wire:model.defer="compose.body"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900/20"
                                     placeholder="Deine Nachricht…"
                                 ></textarea>
                             </div>
@@ -187,10 +187,10 @@
 
                     <div class="border-t border-gray-200 bg-white px-4 py-3">
                         <div class="flex justify-end gap-2">
-                            <button type="button" wire:click="$set('composeMode', false)" class="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            <button type="button" wire:click="$set('composeMode', false)" class="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
                                 Abbrechen
                             </button>
-                            <button type="button" wire:click="sendNewMessage" class="rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800">
+                            <button type="button" wire:click="sendNewMessage" class="rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900/20">
                                 Senden
                             </button>
                         </div>
@@ -213,7 +213,7 @@
                                 {{ $count }} Nachrichten · Start: {{ $oldest ? \Carbon\Carbon::parse($oldest->occurred_at)->format('d.m.Y H:i') : '–' }} · Letzte: {{ $newest ? \Carbon\Carbon::parse($newest->occurred_at)->format('d.m.Y H:i') : '–' }}
                             </div>
                         </div>
-                        <button type="button" wire:click="backToThreadList" class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900">
+                        <button type="button" wire:click="backToThreadList" class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
                             @svg('heroicon-o-arrow-left', 'w-4 h-4')
                             <span class="hidden sm:inline">Zurück</span>
                         </button>
@@ -248,19 +248,19 @@
                     </div>
 
                     <div class="border-t border-gray-200 bg-white px-4 py-3">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 pt-1">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">
                                 Antwort
                             </div>
-                            {{-- Zweiter "Senden"-Button (zusätzlich), damit es immer klar ist --}}
+                            {{-- Primary "Senden" gut sichtbar oben rechts --}}
                             <button
                                 type="button"
                                 wire:click="sendReply"
-                                class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                                class="inline-flex items-center gap-2 rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                                 title="Antwort senden"
                             >
                                 @svg('heroicon-o-paper-airplane', 'w-4 h-4')
-                                <span class="hidden sm:inline">Senden</span>
+                                <span>Senden</span>
                             </button>
                         </div>
 
@@ -269,12 +269,18 @@
                                 <textarea
                                     rows="3"
                                     wire:model.defer="replyBody"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900/20"
                                     placeholder="Kurze Antwort… (Verlauf wird automatisch angehängt)"
                                 ></textarea>
                             </div>
-                            <button type="button" wire:click="sendReply" class="shrink-0 rounded-md bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800">
-                                Senden
+                            {{-- Secondary quick-send (zusätzlich), falls man unten am Text ist --}}
+                            <button
+                                type="button"
+                                wire:click="sendReply"
+                                class="shrink-0 inline-flex items-center justify-center rounded-md border border-gray-200 bg-white p-3 text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                                title="Antwort senden"
+                            >
+                                @svg('heroicon-o-paper-airplane', 'w-5 h-5')
                             </button>
                         </div>
                     </div>
