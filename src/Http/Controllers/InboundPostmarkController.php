@@ -7,6 +7,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 use Platform\Comms\ChannelEmail\Models\{
     CommsChannelEmailThread as Thread,
     CommsChannelEmailInboundMail as InboundMail,
@@ -72,7 +73,23 @@ class InboundPostmarkController extends Controller
                 && Schema::hasColumn('helpdesk_tickets', 'comms_channel_id')
                 && $thread->contexts()->count() === 0
             ) {
-                $board = \Platform\Helpdesk\Models\HelpdeskBoard::where('comms_channel_id', $channelId)->first();
+                // 1) Generisch: Binding-Tabelle (falls vorhanden)
+                $board = null;
+                if (Schema::hasTable('comms_context_channels')) {
+                    $boundBoardId = DB::table('comms_context_channels')
+                        ->where('channel_id', $channelId)
+                        ->where('context_type', \Platform\Helpdesk\Models\HelpdeskBoard::class)
+                        ->value('context_id');
+                    if ($boundBoardId) {
+                        $board = \Platform\Helpdesk\Models\HelpdeskBoard::find($boundBoardId);
+                    }
+                }
+
+                // 2) Fallback: altes Feld am Board
+                if (!$board) {
+                    $board = \Platform\Helpdesk\Models\HelpdeskBoard::where('comms_channel_id', $channelId)->first();
+                }
+
                 if ($board) {
                     $title = $payload['Subject'] ?? 'Ohne Betreff';
                     $textBody = $payload['TextBody'] ?? ($payload['HtmlBody'] ?? '');

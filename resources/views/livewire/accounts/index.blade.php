@@ -77,38 +77,19 @@
                                     $preview = \Illuminate\Support\Str::limit(trim((string) $previewSource), 120);
                                 @endphp
 
-                                <div 
-                                    class="p-3 rounded-lg cursor-pointer transition-all duration-200 border {{ $isActive ? 'border-primary bg-primary-5' : 'border-muted hover:border-primary hover:bg-primary-5' }}"
+                                <div
+                                    class="p-3 rounded-lg cursor-pointer transition-all duration-200 border-l-4 {{ $isActive ? 'border-primary bg-primary-5 border border-primary' : 'border-transparent border border-muted hover:border-primary hover:bg-primary-5' }}"
                                     wire:click="selectThread({{ $thread->id }}, {{ $latestMessage?->id }}, '{{ $latestMessage?->direction }}')"
                                     wire:key="{{ $threadKey }}"
                                 >
-                                    <div class="d-flex items-start gap-3">
-                                        <div class="w-10 h-10 bg-primary rounded-full d-flex items-center justify-center text-on-primary text-sm font-semibold flex-shrink-0">
-                                            @if(($latestMessage?->direction ?? null) === 'inbound')
-                                                @svg('heroicon-o-arrow-down', 'w-5 h-5')
-                                            @elseif(($latestMessage?->direction ?? null) === 'outbound')
-                                                @svg('heroicon-o-arrow-up', 'w-5 h-5')
-                                            @else
-                                                @svg('heroicon-o-envelope', 'w-5 h-5')
-                                            @endif
-                                        </div>
-                                        
-                                        <div class="flex-grow-1 min-w-0">
-                                            <div class="d-flex items-start justify-between gap-3">
-                                                <div class="font-semibold text-secondary truncate">
-                                                    {{ $thread->subject ?: 'Kein Betreff' }}
-                                                </div>
-                                                @if($latestMessage)
-                                                    <div class="text-xs text-muted whitespace-nowrap">
-                                                        {{ \Carbon\Carbon::parse($latestMessage->occurred_at)->format('d.m. H:i') }}
-                                                    </div>
-                                                @endif
+                                    <div class="d-flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <div class="font-semibold text-secondary truncate">
+                                                {{ $thread->subject ?: 'Kein Betreff' }}
                                             </div>
-
                                             <div class="text-sm text-muted truncate mt-1">
                                                 {{ $preview ?: 'Keine Vorschau verfügbar' }}
                                             </div>
-
                                             @if($latestMessage)
                                                 <div class="d-flex items-center gap-2 mt-2 text-xs text-muted">
                                                     <x-ui-badge 
@@ -122,6 +103,9 @@
                                                     </span>
                                                 </div>
                                             @endif
+                                        </div>
+                                        <div class="flex-shrink-0 text-xs text-muted whitespace-nowrap">
+                                            {{ $latestMessage ? \Carbon\Carbon::parse($latestMessage->occurred_at)->format('d.m. H:i') : '' }}
                                         </div>
                                     </div>
                                 </div>
@@ -226,36 +210,34 @@
                             </div>
                         </div>
 
-                        {{-- Verlauf --}}
-                        <div class="flex-grow-1 overflow-y-auto p-6 space-y-6">
+                        {{-- Verlauf (Chat-like) --}}
+                        <div class="flex-grow-1 overflow-y-auto p-6 space-y-4">
                             @forelse($messages as $message)
-                                <div class="d-flex flex-col gap-2">
-                                    <div class="d-flex items-center justify-between">
-                                        <div class="d-flex items-center gap-3 text-sm text-muted">
-                                            <div class="d-flex items-center gap-2">
-                                                @if ($message->direction === 'inbound')
-                                                    @svg('heroicon-o-arrow-down', 'w-4 h-4 text-primary')
-                                                    <span>Von: {{ $message->from }}</span>
-                                                @else
-                                                    @svg('heroicon-o-arrow-up', 'w-4 h-4 text-secondary')
-                                                    <span>An: {{ $message->to }}</span>
-                                                @endif
+                                @php $isInbound = $message->direction === 'inbound'; @endphp
+                                <div class="d-flex flex-col {{ $isInbound ? '' : 'items-end' }}">
+                                    <div class="w-full max-w-3xl {{ $isInbound ? '' : 'ms-auto' }}">
+                                        <div class="rounded-xl border {{ $isInbound ? 'border-primary bg-primary-5' : 'border-muted bg-white' }} p-4">
+                                            <div class="d-flex items-center justify-between text-xs text-muted mb-2">
+                                                <div class="d-flex items-center gap-2 min-w-0">
+                                                    @if ($isInbound)
+                                                        @svg('heroicon-o-arrow-down', 'w-4 h-4 text-primary')
+                                                        <span class="truncate">Von: {{ $message->from }}</span>
+                                                    @else
+                                                        @svg('heroicon-o-arrow-up', 'w-4 h-4 text-secondary')
+                                                        <span class="truncate">An: {{ $message->to }}</span>
+                                                    @endif
+                                                </div>
+                                                <div class="flex-shrink-0 d-flex items-center gap-2">
+                                                    <x-ui-badge variant="{{ $isInbound ? 'primary' : 'secondary' }}" size="xs">
+                                                        {{ $isInbound ? 'Eingehend' : 'Ausgehend' }}
+                                                    </x-ui-badge>
+                                                    <span>{{ \Carbon\Carbon::parse($message->occurred_at)->format('d.m.Y H:i') }}</span>
+                                                </div>
                                             </div>
-                                            <div class="d-flex items-center gap-2">
-                                                @svg('heroicon-o-clock', 'w-4 h-4')
-                                                <span>{{ \Carbon\Carbon::parse($message->occurred_at)->format('d.m.Y H:i') }}</span>
+                                            <div class="prose prose-sm max-w-none text-sm leading-relaxed">
+                                                {!! $message->html_body ?: nl2br(e($message->text_body)) !!}
                                             </div>
-                                            <x-ui-badge 
-                                                variant="{{ $message->direction === 'inbound' ? 'primary' : 'secondary' }}" 
-                                                size="xs"
-                                            >
-                                                {{ $message->direction === 'inbound' ? 'Eingehend' : 'Ausgehend' }}
-                                            </x-ui-badge>
                                         </div>
-                                    </div>
-
-                                    <div class="prose prose-sm max-w-none text-sm leading-relaxed">
-                                        {!! $message->html_body ?: nl2br(e($message->text_body)) !!}
                                     </div>
                                 </div>
                             @empty
