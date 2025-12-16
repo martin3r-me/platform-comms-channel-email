@@ -117,20 +117,6 @@ class Index extends Component
                 })
                 ->latest()
                 ->first();
-
-            // Wenn wir automatisch einen Thread öffnen, gilt der Kontext/Channel als "gesehen"
-            if ($this->activeThread && class_exists(CommsActivityService::class) && CommsActivityService::enabled()) {
-                $userId = auth()->id();
-                if ($userId) {
-                    CommsActivityService::markSeen(
-                        userId: (int) $userId,
-                        channelId: 'email:' . $this->account_id,
-                        contextType: (string) $this->context['model'],
-                        contextId: (int) $this->context['modelId'],
-                        teamId: auth()->user()?->currentTeam?->id,
-                    );
-                }
-            }
         }
     }
 
