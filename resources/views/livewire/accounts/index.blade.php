@@ -141,12 +141,27 @@
             {{-- Detail / Composer --}}
             <div class="flex-1 min-h-0 flex flex-col">
                 @if ($composeMode)
-                    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-                        <div class="text-sm font-semibold text-gray-900">Neue Nachricht</div>
-                        <button type="button" wire:click="backToThreadList" class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
-                            @svg('heroicon-o-arrow-left', 'w-4 h-4')
-                            Zurück
-                        </button>
+                    <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-200">
+                        <div class="text-sm font-semibold text-gray-900">Neuer Thread</div>
+                        <div class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                wire:click="backToThreadList"
+                                class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                            >
+                                @svg('heroicon-o-arrow-left', 'w-4 h-4')
+                                Zurück
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="sendNewMessage"
+                                class="inline-flex items-center gap-2 rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                                title="Thread senden"
+                            >
+                                @svg('heroicon-o-paper-airplane', 'w-4 h-4')
+                                <span>Senden</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="flex-1 min-h-0 overflow-y-auto p-4">
@@ -190,7 +205,7 @@
                         </div>
                     </div>
 
-                    <div class="border-t border-gray-200 bg-white px-4 py-3">
+                    <div class="sticky bottom-0 border-t border-gray-200 bg-white/95 backdrop-blur px-4 py-3">
                         <div class="flex justify-end gap-2">
                             <button type="button" wire:click="$set('composeMode', false)" class="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10">
                                 Abbrechen

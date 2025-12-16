@@ -113,11 +113,33 @@ TXT;
         // ---------------------------------------------------------
         // 4) Body inkl. Marker & Statistik
         // ---------------------------------------------------------
+        // Optional: kleine Signatur (Name des eingeloggten Users) in den Body
+        $signatureHtml = '';
+        $signatureText = '';
+        if (isset($opt['sender']) && $opt['sender'] instanceof User) {
+            $sigName = $opt['sender']->fullname
+                ?? trim(($opt['sender']->first_name ?? '') . ' ' . ($opt['sender']->last_name ?? ''))
+                ?: null;
+
+            if ($sigName) {
+                $signatureHtml = <<<HTML
+<br><br>
+<p style="font-size: 13px; color: #444; margin: 0;">
+    &ndash;&ndash;<br>
+    {$sigName}
+</p>
+HTML;
+                $signatureText = "\n\n--\n{$sigName}";
+            }
+        }
+
         $marker = "[conv:$token]";
+        $htmlBody .= $signatureHtml;
         $htmlBody .= "\n<!-- conversation-token:$token --><span style=\"display:block;\">$marker</span>";
         $htmlBody .= $htmlStats;
 
         $textBody ??= strip_tags($htmlBody);
+        $textBody .= $signatureText;
         $textBody .= "\n\n$marker" . $textStats;
 
         // ---------------------------------------------------------
@@ -159,8 +181,18 @@ TXT;
         // ---------------------------------------------------------
         // 7) Versand via Postmark
         // ---------------------------------------------------------
-        $from = $account->name
-            ? "{$account->name} <{$account->address}>"
+        // Absender-Name: bevorzugt eingeloggter User (Vorname Nachname), sonst Account-Name
+        $fromName = null;
+        if (isset($opt['sender']) && $opt['sender'] instanceof User) {
+            $fromName = $opt['sender']->fullname
+                ?? trim(($opt['sender']->first_name ?? '') . ' ' . ($opt['sender']->last_name ?? ''))
+                ?: null;
+        }
+
+        $fromName ??= ($account->name ?: null);
+
+        $from = $fromName
+            ? "{$fromName} <{$account->address}>"
             : $account->address;
 
         $this->client->sendEmail(
