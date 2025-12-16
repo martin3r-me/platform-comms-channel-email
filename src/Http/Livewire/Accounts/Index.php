@@ -17,6 +17,7 @@ class Index extends Component
 {
     public int $account_id;
     public CommsChannelEmailAccount $account;
+    public string $ui_mode = 'comms'; // comms|admin
 
     protected $rules = [
         'account.ownership_type' => 'required|in:team,user',
@@ -89,10 +90,11 @@ class Index extends Component
 
 
 
-    public function mount(int $account_id, array $context = []): void
+    public function mount(int $account_id, array $context = [], string $ui_mode = 'comms'): void
     {
         $this->account_id = $account_id;
         $this->context = $context;
+        $this->ui_mode = $ui_mode ?: 'comms';
         $this->account = CommsChannelEmailAccount::with('threads')->findOrFail($this->account_id);
         // MVP-UX: Thread erst nach explizitem Klick anzeigen (kein Auto-Select)
         $this->activeThread = null;
