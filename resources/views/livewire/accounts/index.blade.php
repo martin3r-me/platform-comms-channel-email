@@ -10,35 +10,31 @@
                     <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 font-medium text-gray-700">
                         {{ class_basename($context['model'] ?? '') }} #{{ $context['modelId'] ?? '' }}
                     </span>
-                    @if (!empty($context['url']))
-                        <a href="{{ $context['url'] }}" target="_blank" class="hover:text-gray-700 underline-offset-2 hover:underline">
-                            Kontext öffnen
-                        </a>
-                    @endif
                 </div>
             @endif
         </div>
 
-        <div class="flex items-center gap-2">
-            @if (!empty($context))
-                <button
-                    type="button"
-                    wire:click="$toggle('showContextDetails')"
-                    class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-                >
-                    @svg('heroicon-o-information-circle', 'w-4 h-4')
-                    <span class="hidden sm:inline">{{ $showContextDetails ? 'Kontext ausblenden' : 'Kontext' }}</span>
-                </button>
-            @endif
-
+        <div class="flex items-center gap-2 justify-end">
             <button
                 type="button"
                 wire:click="startNewMessage"
                 class="inline-flex items-center gap-2 rounded-md bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
             >
                 @svg('heroicon-o-plus', 'w-4 h-4')
-                <span>Neue Nachricht</span>
+                <span>Neuer Thread</span>
             </button>
+
+            @if (!empty($context))
+                <button
+                    type="button"
+                    wire:click="$toggle('showContextDetails')"
+                    class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                    title="{{ $showContextDetails ? 'Kontext ausblenden' : 'Kontext einblenden' }}"
+                >
+                    @svg('heroicon-o-information-circle', 'w-4 h-4')
+                    <span class="hidden sm:inline">{{ $showContextDetails ? 'Kontext' : 'Kontext' }}</span>
+                </button>
+            @endif
         </div>
     </div>
 
@@ -66,8 +62,17 @@
         <div class="flex-1 min-h-0 flex divide-x divide-gray-200">
             {{-- Thread-Liste --}}
             <div class="w-80 lg:w-96 shrink-0 min-h-0 overflow-y-auto {{ ($activeThread || $composeMode) ? 'hidden md:block' : '' }}">
-                <div class="px-4 py-3 border-b border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between gap-3">
                     <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">Threads</div>
+                    <button
+                        type="button"
+                        wire:click="startNewMessage"
+                        class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                        title="Neuen Thread starten"
+                    >
+                        @svg('heroicon-o-plus', 'w-4 h-4')
+                        <span>Neu</span>
+                    </button>
                 </div>
 
                 <div class="p-2">
