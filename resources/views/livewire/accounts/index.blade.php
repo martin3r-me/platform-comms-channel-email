@@ -62,17 +62,34 @@
         <div class="flex-1 min-h-0 flex divide-x divide-gray-200">
             {{-- Thread-Liste --}}
             <div class="w-80 lg:w-96 shrink-0 min-h-0 overflow-y-auto {{ ($activeThread || $composeMode) ? 'hidden md:block' : '' }}">
-                <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between gap-3">
-                    <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">Threads</div>
-                    <button
-                        type="button"
-                        wire:click="startNewMessage"
-                        class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-                        title="Neuen Thread starten"
-                    >
-                        @svg('heroicon-o-plus', 'w-4 h-4')
-                        <span>Neu</span>
-                    </button>
+                <div class="px-4 py-3 border-b border-gray-200 flex flex-col gap-2">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">Threads</div>
+                        <button
+                            type="button"
+                            wire:click="startNewMessage"
+                            class="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                            title="Neuen Thread starten"
+                        >
+                            @svg('heroicon-o-plus', 'w-4 h-4')
+                            <span>Neu</span>
+                        </button>
+                    </div>
+                    @if($this->hasContext())
+                        <div class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                wire:click="toggleShowAllThreads"
+                                class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition
+                                    {{ $showAllThreads
+                                        ? 'bg-gray-900 text-white'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}"
+                            >
+                                @svg('heroicon-o-funnel', 'w-3.5 h-3.5')
+                                {{ $showAllThreads ? 'Alle Threads' : 'Nur Kontext' }}
+                            </button>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="p-2">
@@ -132,7 +149,14 @@
                                 @svg('heroicon-o-envelope', 'w-6 h-6 text-gray-500')
                             </div>
                             <div class="text-sm font-semibold text-gray-900">Keine Threads</div>
-                            <div class="mt-1 text-sm text-gray-500">In diesem Kontext gibt es noch keine Kommunikation.</div>
+                            <div class="mt-1 text-sm text-gray-500">
+                                @if($this->hasContext() && !$showAllThreads)
+                                    Keine Threads in diesem Kontext.
+                                    <button type="button" wire:click="toggleShowAllThreads" class="text-blue-600 hover:underline">Alle anzeigen</button>
+                                @else
+                                    Noch keine Kommunikation vorhanden.
+                                @endif
+                            </div>
                         </div>
                     @endif
                 </div>

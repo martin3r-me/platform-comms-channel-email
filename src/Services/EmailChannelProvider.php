@@ -64,7 +64,7 @@ class EmailChannelProvider implements ChannelProviderInterface
 
         $account = CommsChannelEmailAccount::find($id);
         if ($account) {
-            $account->delete();
+            $account->forceDelete();
         }
     }
 }

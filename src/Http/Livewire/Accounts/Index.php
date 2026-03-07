@@ -40,7 +40,8 @@ class Index extends Component
     public array $context = [];
     public bool $showContextDetails = false;
     public string $activeTab = 'messages';
-    
+    public bool $showAllThreads = false;
+
     // Settings-Properties
     public string $editName = '';
     public string $userSearch = '';
@@ -52,10 +53,14 @@ class Index extends Component
     #[Computed]
     public function threads()
     {
-        // Nur Threads im aktuellen Kontext laden, wenn Kontext gesetzt ist
         $query = $this->account->threads()->latest();
 
-        if (!empty($this->context['model']) && !empty($this->context['modelId'])) {
+        // Kontext-Filter nur anwenden wenn Kontext vorhanden UND nicht "alle Threads" aktiv
+        if (
+            !$this->showAllThreads
+            && !empty($this->context['model'])
+            && !empty($this->context['modelId'])
+        ) {
             $query->whereHas('contexts', function ($q) {
                 $q->where('context_type', $this->context['model'])
                   ->where('context_id', $this->context['modelId']);
@@ -63,6 +68,17 @@ class Index extends Component
         }
 
         return $query->get();
+    }
+
+    public function toggleShowAllThreads(): void
+    {
+        $this->showAllThreads = !$this->showAllThreads;
+        unset($this->threads);
+    }
+
+    public function hasContext(): bool
+    {
+        return !empty($this->context['model']) && !empty($this->context['modelId']);
     }
 
     #[Computed]
